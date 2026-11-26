@@ -453,7 +453,7 @@ server.registerTool(
   "jasp_list_methods",
   {
     title: "列出可用统计方法",
-    description: "列出 P0 支持的 JASP 分析、所需变量角色与 JASP 分析名，可用于把自然语言映射到方法。",
+    description: "列出已封装的 JASP 分析、所需变量角色与 JASP 分析名，可用于把自然语言映射到方法。",
     inputSchema: {},
   },
   async () => {
@@ -470,12 +470,12 @@ server.registerTool(
     const body = rows.map((row) => `| ${row.join(" | ")} |`).join("\n");
     return ok(
       [
-        "### P0 支持的方法",
+        "### 已封装的方法",
         "",
         header,
         body,
         "",
-        "`*` 表示必填角色。P0 暂未封装：配对 t 检验、重复测量 ANOVA、协方差分析、调节/中介、混合模型。",
+        "`*` 表示必填角色。当前 22 类均已可用：描述统计、信度（α 与 ω）、相关、独立与配对 t 检验、方差分析、协方差分析、重复测量方差分析、回归、Process 与贝叶斯 Process、线性/广义线性混合模型及贝叶斯混合模型、EFA/PCA/CFA、SEM、PLS-SEM、MIMIC、潜变量增长曲线；实际限制是 EFA/PCA 至少需要 3 个观测变量，CFA 需提供 options.factors，SEM/PLS-SEM 需提供 options.models 语法，测量等值、元分析与功效分析尚未封装。",
       ].join("\n")
     );
   }

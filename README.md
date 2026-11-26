@@ -164,7 +164,7 @@ JASPDesktop.exe <template.jasp> --report <输出目录> --logToFile --timeOut=5
 | `jasp_load_data` | 加载 CSV/TSV/JSON，建立会话 |
 | `jasp_ingest_data` | 从对话粘贴内容建数据集 |
 | `jasp_describe_data` | 变量字典、缺失、水平、描述统计 |
-| `jasp_list_methods` | 列出 P0 方法与变量角色 |
+| `jasp_list_methods` | 列出已封装方法与变量角色 |
 | `jasp_plan_analysis` | 自然语言 → 分析计划（不执行） |
 | `jasp_confirm_plan` | 确认计划 |
 | `jasp_update_plan` | 增量修改变量/方法/选项 |
