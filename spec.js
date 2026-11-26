@@ -28,7 +28,7 @@
    JASP-Bridge MCP Server（本仓库）
    ├─ server.js        15 个工具、会话编排
    ├─ plan/            自然语言 → 分析计划 → JASP 选项
-   ├─ data/            CSV/TSV/JSON → 数据字典 + 快照
+   ├─ data/            CSV/TSV/JSON/Excel/SPSS → 数据字典 + 快照
    ├─ jasp/detect.js   JASP / Rscript / jaspTools 能力探测
    ├─ jasp/rRunner.js  后台调用 Rscript（无头）
    ├─ jasp/cliRunner.js 调用 JASP CLI 重放 .jasp 模板
@@ -159,7 +159,7 @@ JASPDesktop.exe <template.jasp> --report <输出目录> --logToFile --timeOut=5
 | 工具 | 作用 |
 | --- | --- |
 | `jasp_status` | 环境自检，返回可用后端 |
-| `jasp_load_data` | 加载 CSV/TSV/JSON，建立会话 |
+| `jasp_load_data` | 加载 CSV/TSV/JSON/Excel（.xlsx/.xls）/SPSS（.sav），建立会话 |
 | `jasp_ingest_data` | 从对话粘贴内容建数据集 |
 | `jasp_describe_data` | 变量字典、缺失、水平、描述统计 |
 | `jasp_list_methods` | 列出 P0 方法与变量角色 |
@@ -240,7 +240,7 @@ JASP 官方 R 工具链（`jaspSyntax` / `jaspTools`）目前提供的是**读�
 
 ## 7. 已知限制
 
-- `.sav` 与 Excel 未直接支持：先另存为 CSV（`.sav` 可用 JASP 导出）。
+- 数据文件支持 `.csv`、`.tsv`、`.json`、Excel（`.xlsx` / `.xls` / `.xlsm`）和 SPSS（`.sav`）。多工作表 Excel 默认读第一张，可用 `sheet` 指定表名或从 1 开始的序号。
 - 小样本下变量类型推断可能把连续变量判为 ordinal；用 `types` 参数覆盖。
 - P0 只解析结果表，不解析图；图可通过 `jasp_run_template` 导出 HTML/PDF。
 - 重复测量 ANOVA 目前只封装**单一被试内因子**（多个水平用多列表示），可叠加 1–2 个组间因子；多因素被试内设计（如 2×3）需导出请求后手工扩展因子定义。

@@ -1,10 +1,10 @@
 {
   "schema": "jasp-bridge/progress@1",
-  "updated_at": "2026-11-26T01:20:00.000Z",
+  "updated_at": "2026-11-26T11:10:00.000Z",
   "version": "0.3.0",
   "phase": "0.3.0：类型推断与可确认分析方案",
-  "status": "ready_to_release",
-  "summary": "0.3.0 修正了量表均分等连续分数因唯一值少被判成有序的问题；EFA/CFA/SEM 等在未指定题项或因子时会给出可确认的建议方案。统计数字、表、图和 .jasp 仍只由本机 JASP 引擎产生。22 类分析能力与 0.2.0 相同。测量等值、元分析、功效分析、APA 表格、图中可读变量名、更稳定打开 .jasp 仍属后续 3.0 工作。",
+  "status": "unreleased_changes",
+  "summary": "在 0.3.0 之上（含未发版的 MCP 类型强制修复）增加了 Excel（.xlsx/.xls/.xlsm）和 SPSS（.sav）数据读入。读入后仍走同一套变量字典、类型推断、计划与分析流程；CSV/TSV/JSON 行为不变。尚未推送、打 tag 或同步到 WorkBuddy 安装目录。测量等值、元分析、功效分析、APA 表格、图中可读变量名、更稳定打开 .jasp 仍属后续 3.0 工作。",
   "completed": [
     "重复测量 ANOVA（球形检验、GG 校正、混合设计、事后比较）",
     "ANOVA 事后比较（Tukey/Holm/Bonferroni/Scheffé/Šidák/FDR）",
@@ -31,7 +31,8 @@
     "?? GitHub ???? nanple/jasp-bridge v0.2.0?? node.exe ??? zip ? latest.json?",
     "类型推断：不再仅凭唯一值把数值列判成 ordinal；均分等带小数的连续分数为 scale，1–5/1–7 题项仍为 ordinal",
     "可确认分析方案：未指定题项或因子时，根据列名、前缀和类型提出建议，标明为建议，确认前不执行",
-    "宿主提示词与工具说明加强：宿主只转发和展示插件结果，不要自行计算或改用 Python 做旁路分析"
+    "宿主提示词与工具说明加强：宿主只转发和展示插件结果，不要自行计算或改用 Python 做旁路分析",
+    "Excel（.xlsx/.xls/.xlsm）与 SPSS（.sav）直接读取：多表可选，保留 .sav 标签与 measure 类型"
   ],
   "next": [
     "测量等值",
@@ -40,8 +41,7 @@
     "更接近 APA 的表格",
     "图中使用可读变量名（而非编码后的 jaspColumnN）",
     "更稳定地打开 .jasp 文件",
-    "缺失值策略（FIML / 多重插补）扩展到各分析",
-    "Excel（.xlsx）读取支持"
+    "缺失值策略（FIML / 多重插补）扩展到各分析"
   ],
   "known_issues": [
     "`.jasp` 自动重算：写入真实 jaspResults 后，JASP 0.99.10 `--report`（无 --hide）与用户 GUI 打开+Refresh 均无 fatalError，结果正常显示。模板 moduleVersion（如 jaspAnova 0.95.5）可能与本机模块（0.96.6）不一致，目前只是警告。",
@@ -84,6 +84,11 @@
       "id": "t_030_type_and_plan",
       "content": "0.3.0：类型推断修正 + 可确认的题项/因子建议方案（确认前不执行）",
       "status": "completed"
+    },
+    {
+      "id": "t_excel_sav_ingest",
+      "content": "Excel（.xlsx/.xls）与 SPSS（.sav）读入已在源码中实现并通过测试；尚未发版或同步 WorkBuddy",
+      "status": "completed"
     }
   ],
   "commands": {
@@ -111,6 +116,9 @@
       "GUIDE.md",
       "HANDOFF.md",
       "CHANGELOG.md"
-    ]
+    ],
+    "ingest": "src/data/ingest.js",
+    "excel_reader": "src/data/excel.js",
+    "spss_reader": "src/data/spss.js"
   }
 }

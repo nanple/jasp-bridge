@@ -6,7 +6,7 @@ JASP-Bridge 0.3.0 安装说明（2026-11-26）
 
 当前能力：22 类分析（含 EFA / CFA / SEM、Process、混合模型，以及贝叶斯 Process、
 贝叶斯线性/广义混合模型、MIMIC、潜变量增长曲线）。可以直接说“做 EFA / CFA / SEM”；
-若未指定题项或因子，插件会按列名和前缀给出建议方案，标明为建议，确认后才执行。
+若未指定题项或因子，插件会按列名和前缀给出建议方案，标明为建议，确认后才执行。数据可直接加载 CSV / Excel（.xlsx .xls） / SPSS（.sav）。
 回归、配对 t、ANCOVA、ANOVA 仍标 beta。
 
 官方便携包 jasp-bridge-0.3.0-portable.zip 约 39 MB，含插件代码、依赖、文档、示例

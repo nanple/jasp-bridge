@@ -326,18 +326,22 @@ server.registerTool(
   {
     title: "加载数据文件",
     description:
-      "从本地路径加载 CSV/TSV/JSON 数据，建立变量字典与会话。返回 session_id，后续工具都要带上它。",
+      "从本地路径加载 CSV/TSV/JSON、Excel（.xlsx/.xls/.xlsm）或 SPSS（.sav）数据，建立变量字典与会话。返回 session_id，后续工具都要带上它。多工作表 Excel 默认读取第一张表，可用 sheet 指定表名或从 1 开始的序号。",
     inputSchema: {
-      path: z.string().describe("数据文件绝对路径（支持 .csv/.tsv/.json；.sav 需先转 CSV）"),
+      path: z.string().describe("数据文件绝对路径（支持 .csv/.tsv/.json/.xlsx/.xls/.xlsm/.sav）"),
       session_id: z.string().optional().describe("复用已有会话；不传则新建"),
       name: z.string().optional().describe("数据快照名，默认取文件名"),
+      sheet: z
+        .union([z.string(), z.number()])
+        .optional()
+        .describe("Excel 工作表名，或从 1 开始的序号；默认第一张表。CSV/JSON/SAV 可忽略"),
       types: z
         .record(z.enum(["scale", "ordinal", "nominal"]))
         .optional()
         .describe("手动覆盖变量类型，例如 {\"gender\":\"nominal\"}"),
     },
   },
-  async ({ path: filePath, session_id, name, types }) => {
+  async ({ path: filePath, session_id, name, types, sheet }) => {
     try {
       const absolute = path.resolve(filePath);
       const session = session_id ? requireSession(session_id) : createSession();
@@ -345,6 +349,7 @@ server.registerTool(
         outDir: ensureDir(path.join(runsDir(session.id), "data")),
         name: name || path.basename(absolute, path.extname(absolute)),
         types: types || {},
+        sheet,
       });
 
       session.data = {

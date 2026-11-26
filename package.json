@@ -12,13 +12,15 @@
     "status": "node src/cli/status.js",
     "setup:runtime": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/setup_runtime.ps1",
     "build:release": "powershell -NoProfile -ExecutionPolicy Bypass -File build-release.ps1",
-    "smoke": "node --test test/smoke.test.js test/protocol.test.js test/e2e.test.js test/update.test.js test/csv.test.js test/jasp.test.js test/progress.test.js test/ingest.test.js test/planner-suggest.test.js test/coerce.test.js",
+    "smoke": "node --test test/smoke.test.js test/protocol.test.js test/e2e.test.js test/update.test.js test/csv.test.js test/jasp.test.js test/progress.test.js test/ingest.test.js test/planner-suggest.test.js test/coerce.test.js test/formats.test.js",
     "progress": "node scripts/progress_server.mjs"
   },
   "engines": {
     "node": ">=20"
   },
   "dependencies": {
+    "@e965/xlsx": "^0.20.3",
+    "@irbisadm/statfmt": "^0.1.1",
     "@modelcontextprotocol/sdk": "^1.0.0",
     "csv-parse": "^5.5.0",
     "zod": "^3.23.0"

@@ -2,8 +2,14 @@ import fs from "node:fs";
 import path from "node:path";
 import { parse } from "csv-parse/sync";
 import { ensureDir } from "../config.js";
+import { parseExcelFile } from "./excel.js";
+import { parseSavFile } from "./spss.js";
+import { readWithPreferredEngine } from "./rTabular.js";
+import { IngestUserError } from "./errors.js";
 
 const MISSING = new Set(["", "na", "n/a", "null", "nan", "none", "."]);
+const EXCEL_EXTS = new Set([".xlsx", ".xls", ".xlsm"]);
+const SAV_EXTS = new Set([".sav", ".zsav"]);
 
 function isMissing(value) {
   return value === null || value === undefined || MISSING.has(String(value).trim().toLowerCase());
@@ -11,6 +17,8 @@ function isMissing(value) {
 
 function toNumber(value) {
   if (isMissing(value)) return NaN;
+  if (typeof value === "number") return Number.isFinite(value) ? value : NaN;
+  if (typeof value === "boolean") return NaN;
   const cleaned = String(value).trim().replace(/,/g, "");
   const n = Number(cleaned);
   return Number.isFinite(n) ? n : NaN;
@@ -29,6 +37,7 @@ export function looksCategorical(name) {
 function isIntegerToken(value) {
   const n = toNumber(value);
   if (!Number.isFinite(n) || !Number.isInteger(n)) return false;
+  if (typeof value === "number") return true;
   const raw = String(value).trim().replace(/,/g, "");
   // "4.0" / "3.50" keep a decimal point in the source, so treat as continuous.
   return !/[.]/.test(raw);
@@ -159,33 +168,33 @@ function writeCsv(filePath, columns, records) {
   fs.writeFileSync(filePath, `${lines.join("\n")}\n`, "utf8");
 }
 
-export function ingestText(text, options) {
-  const { format = "csv", types = {}, outDir, name = "data" } = options;
-  if (!outDir) throw new Error("ingestText 需要 outDir 参数。");
-  ensureDir(outDir);
+function formatLevel(level, valueLabels) {
+  const label = valueLabels?.[level.value] || valueLabels?.[String(level.value)];
+  return label ? `${level.value}=${label}(${level.count})` : `${level.value}(${level.count})`;
+}
 
-  let records;
-  if (format === "json") {
-    records = parseJson(text);
-  } else if (format === "tsv" || format === "tab") {
-    records = parseCsv(text, "\t");
-  } else {
-    records = parseCsv(text, ",");
-  }
+export function ingestRecords(records, options = {}, extra = {}) {
+  const { types = {}, outDir, name = "data", format = "csv" } = options;
+  if (!outDir) throw new Error("ingestRecords 需要 outDir 参数。");
+  ensureDir(outDir);
 
   const normalized = normalizeRecords(records);
   const columns = normalized.columns;
   const rows = normalized.records;
+  const columnMeta = extra.columnMeta || {};
 
   const variables = columns.map((column) => {
     const values = rows.map((row) => row[column]);
-    const type = inferType(column, values, types[column]);
-    return {
+    const meta = columnMeta[column] || {};
+    const type = inferType(column, values, types[column] || meta.type || undefined);
+    const variable = {
       name: column,
-      label: column,
+      label: meta.label || column,
       type,
       ...summarize(values, type),
     };
+    if (meta.valueLabels) variable.valueLabels = meta.valueLabels;
+    return variable;
   });
 
   const dataPath = path.join(outDir, `${name.replace(/[^\w.-]+/g, "_")}.csv`);
@@ -199,25 +208,86 @@ export function ingestText(text, options) {
     columns,
     variables,
     preview: rows.slice(0, 10),
+    ...(extra.sheet ? { sheet: extra.sheet, sheetIndex: extra.sheetIndex, sheets: extra.sheets } : {}),
+    ...(extra.engine ? { engine: extra.engine } : {}),
   };
+}
+
+export function ingestText(text, options) {
+  const { format = "csv" } = options;
+  let records;
+  if (format === "json") {
+    records = parseJson(text);
+  } else if (format === "tsv" || format === "tab") {
+    records = parseCsv(text, "\t");
+  } else {
+    records = parseCsv(text, ",");
+  }
+  return ingestRecords(records, { ...options, format });
+}
+
+function formatFromExt(ext) {
+  if (ext === ".json") return "json";
+  if (ext === ".tsv" || ext === ".tab") return "tsv";
+  if (ext === ".xlsx" || ext === ".xlsm") return "xlsx";
+  if (ext === ".xls") return "xls";
+  if (ext === ".sav" || ext === ".zsav") return "sav";
+  return "csv";
+}
+
+function ingestTabularFile(filePath, format, options) {
+  const nodeRead = () => {
+    if (format === "sav") return parseSavFile(filePath);
+    return parseExcelFile(filePath, options, path.extname(filePath).toLowerCase() || `.${format}`);
+  };
+
+  const parsed = readWithPreferredEngine({
+    filePath,
+    format,
+    sheet: options.sheet,
+    engine: options.engine,
+    nodeRead,
+  });
+
+  return ingestRecords(
+    parsed.records,
+    { ...options, format },
+    {
+      columnMeta: parsed.columnMeta || {},
+      sheet: parsed.sheet,
+      sheetIndex: parsed.sheetIndex,
+      sheets: parsed.sheets,
+      engine: parsed.engine,
+    }
+  );
 }
 
 export function ingestFile(filePath, options = {}) {
   if (!fs.existsSync(filePath)) throw new Error(`文件不存在：${filePath}`);
   const ext = path.extname(filePath).toLowerCase();
-  if (ext === ".sav") {
-    throw new Error(
-      "P0 暂不支持直接读取 .sav。请先在 JASP 中另存为 CSV，或使用 jasp_run_template 重放已有 .jasp 模板。"
+  if (ext === ".xlx") {
+    throw new IngestUserError(
+      "不支持 .xlx 扩展名。如果这是旧版 Excel 工作簿，请将扩展名改为 .xls 后再加载。",
+      "unsupported_ext"
     );
   }
-  const format =
-    options.format ||
-    (ext === ".json" ? "json" : ext === ".tsv" || ext === ".tab" ? "tsv" : "csv");
+
+  const format = options.format || formatFromExt(ext);
+  const name = options.name || path.basename(filePath, ext);
+
+  if (EXCEL_EXTS.has(`.${format}`) || EXCEL_EXTS.has(ext) || format === "xlsx" || format === "xls") {
+    const excelFormat = format === "xls" || ext === ".xls" ? "xls" : "xlsx";
+    return ingestTabularFile(filePath, excelFormat, { ...options, name });
+  }
+  if (SAV_EXTS.has(`.${format}`) || SAV_EXTS.has(ext) || format === "sav") {
+    return ingestTabularFile(filePath, "sav", { ...options, name });
+  }
+
   const text = fs.readFileSync(filePath, "utf8").replace(/^\uFEFF/, "");
   return ingestText(text, {
     ...options,
     format,
-    name: options.name || path.basename(filePath, ext),
+    name,
     sourcePath: filePath,
   });
 }
@@ -225,14 +295,14 @@ export function ingestFile(filePath, options = {}) {
 export function profileMarkdown(data) {
   const headers = ["变量", "类型", "缺失", "唯一值", "均值", "标准差", "范围", "水平"];
   const rows = data.variables.map((v) => [
-    v.name,
+    v.label && v.label !== v.name ? `${v.name}（${v.label}）` : v.name,
     v.type,
     v.missing,
     v.unique,
     v.mean ?? "",
     v.sd ?? "",
     v.min !== undefined ? `${v.min} ~ ${v.max}` : "",
-    v.levels ? v.levels.map((l) => `${l.value}(${l.count})`).join(", ") : "",
+    v.levels ? v.levels.map((l) => formatLevel(l, v.valueLabels)).join(", ") : "",
   ]);
   const lines = [
     `**样本量**：${data.n} 行 × ${data.columns.length} 列`,
@@ -241,5 +311,11 @@ export function profileMarkdown(data) {
     "| " + headers.map(() => "---").join(" | ") + " |",
     ...rows.map((row) => "| " + row.map((c) => String(c).replace(/\|/g, "\\|")).join(" | ") + " |"),
   ];
+  if (data.sheet) {
+    const sheetList = Array.isArray(data.sheets) && data.sheets.length > 1 ? `；工作簿共 ${data.sheets.length} 张：${data.sheets.join("、")}` : "";
+    lines.unshift(`**工作表**：${data.sheet}（第 ${data.sheetIndex || 1} 张${sheetList}）`, "");
+  }
   return lines.join("\n");
 }
+
+export { IngestUserError } from "./errors.js";

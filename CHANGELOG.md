@@ -2,6 +2,14 @@
 
 ## Unreleased
 
+### 功能
+
+- 可以直接加载 Excel（`.xlsx` / `.xls` / `.xlsm`）和 SPSS（`.sav`）数据文件，与原有 CSV / TSV / JSON 走同一套变量字典、类型推断、计划和分析流程。
+- 多工作表 Excel 默认读取第一张表；`jasp_load_data` 增加 `sheet` 参数，可按表名或从 1 开始的序号指定。找不到表、第一张表为空时，会列出可用工作表。
+- `.sav` 会保留变量标签、值标签和 measure 类型（`nominal` / `ordinal` / `scale`）；写入内部 CSV 快照时仍使用原始编码值，标签显示在数据字典中。显式 `types` 覆盖仍然优先。
+- 密码保护或加密的 Excel 工作簿、损坏文件会给出明确中文报错；`.xlsm` 只读单元格数据，不执行宏。
+- 实现取舍：若本机 JASP/R 运行时已安装 `haven` / `readxl`，优先用它们读取（更贴近 JASP）；否则（以及测试环境）使用 Node 库 `@irbisadm/statfmt`（MIT，ReadStat 移植，与 haven 同源）和 `@e965/xlsx`（Apache-2.0，SheetJS 社区版的安全修补分发）。可用环境变量 `JASP_BRIDGE_TABULAR=node|r|auto` 强制选择。
+
 ### 修复
 
 - 部分 MCP 宿主会把字符串数组改写成 `{"0":"a","1":"b"}` 这类对象，并把布尔值传成 `"true"` / `"false"` 字符串。`jasp_plan_analysis` / `jasp_update_plan` 的变量参数会因此在校验阶段报 “expected array”，而选项里的 `"false"` 会原样进入 JASP，触发 `!optionToCheck: invalid argument type` 致命错误。现已在参数校验前和写入引擎请求前把这两类值还原。

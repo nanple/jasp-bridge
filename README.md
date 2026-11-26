@@ -56,7 +56,7 @@ JASP 免费开源，结果随选项即时更新，假设检验与效应量同时
    JASP-Bridge MCP Server（本仓库）
    ├─ server.js        15 个工具、会话编排
    ├─ plan/            自然语言 → 分析计划 → JASP 选项
-   ├─ data/            CSV/TSV/JSON → 数据字典 + 快照
+   ├─ data/            CSV/TSV/JSON/Excel/SPSS → 数据字典 + 快照
    ├─ jasp/detect.js   JASP / Rscript / jaspTools 能力探测
    ├─ jasp/rRunner.js  后台调用 Rscript（无头）
    ├─ jasp/cliRunner.js 调用 JASP CLI 重放 .jasp 模板
@@ -187,7 +187,7 @@ JASPDesktop.exe <template.jasp> --report <输出目录> --logToFile --timeOut=5
 | 工具 | 作用 |
 | --- | --- |
 | `jasp_status` | 环境自检，返回可用后端 |
-| `jasp_load_data` | 加载 CSV/TSV/JSON，建立会话 |
+| `jasp_load_data` | 加载 CSV/TSV/JSON/Excel（.xlsx/.xls）/SPSS（.sav），建立会话 |
 | `jasp_ingest_data` | 从对话粘贴内容建数据集 |
 | `jasp_describe_data` | 变量字典、缺失、水平、描述统计 |
 | `jasp_list_methods` | 列出已封装方法与变量角色 |
@@ -296,7 +296,7 @@ MCP 侧也提供同名工具 `jasp_progress`（`format=markdown|json`），两�
 
 ## 8. 已知限制
 
-- `.sav` 与 Excel 未直接支持：先另存为 CSV（`.sav` 可用 JASP 导出）。
+- 数据文件支持 `.csv`、`.tsv`、`.json`、Excel（`.xlsx` / `.xls` / `.xlsm`）和 SPSS（`.sav`）。多工作表 Excel 默认读取第一张表，可用 `jasp_load_data` 的 `sheet` 参数指定表名或从 1 开始的序号。`.sav` 会保留变量标签、值标签和 measure 类型（`types` 仍可手动覆盖）。密码保护或加密的工作簿无法读取，需先取消密码；宏（`.xlsm`）只读数据、不会执行。旧版 `.xls` 对非常古老或带复杂对象的工作簿可能不兼容。内部仍会写成 CSV 快照再交给 JASP。
 - 类型推断不再仅凭唯一值数量：带小数的均分/总分视为 `scale`，1–5 / 1–7 题项仍为 `ordinal`，年龄等范围明显不是量表题的整数列为 `scale`。若仍需纠正，用 `types` 参数覆盖。
 - P0 只解析结果表，不解析图；图可通过 `jasp_run_template` 导出 HTML/PDF。
 - 重复测量 ANOVA 目前只封装**单一被试内因子**（多个水平用多列表示），可叠加 1–2 个组间因子；多因素被试内设计（如 2×3）需导出请求后手工扩展因子定义。
@@ -330,7 +330,7 @@ MCP 侧也提供同名工具 `jasp_progress`（`format=markdown|json`），两�
 ## 10. 路线图
 
 - **当前（0.3.0）**：在 0.2.0 的 22 类分析与 `.jasp` 写盘之上，修正了量表均分等连续分数被误判为有序的问题；EFA/CFA/SEM 等在未指定题项或因子时会给出可确认的建议方案。宿主应展示插件返回的表、图和 `.jasp`，不要自行计算。
-- **下一步（3.0 仍未做部分）**：测量等值、元分析、功效分析、更接近 APA 的表格、图中使用可读变量名（而非 `jaspColumnN`）、更稳定地打开 `.jasp` 文件；以及 Excel（`.xlsx`）直接读取、更完整的缺失值策略（FIML）。
+- **下一步（3.0 仍未做部分）**：测量等值、元分析、功效分析、更接近 APA 的表格、图中使用可读变量名（而非 `jaspColumnN`）、更稳定地打开 `.jasp` 文件；以及更完整的缺失值策略（FIML）。
 
 ---
 
