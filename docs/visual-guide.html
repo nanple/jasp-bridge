@@ -1,0 +1,613 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>JASP-Bridge 图文安装指南</title>
+<style>
+  :root {
+    --ink: #1f2937;
+    --muted: #5b6778;
+    --line: #dbe4ef;
+    --blue: #1d4ed8;
+    --teal: #0f766e;
+    --green: #15803d;
+    --amber: #b45309;
+    --red: #b91c1c;
+    --paper: #ffffff;
+    --wash: #f3f7fc;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; }
+  body {
+    background: #eef3f9;
+    color: var(--ink);
+    font-family: "Microsoft YaHei", "PingFang SC", "Noto Sans CJK SC", Arial, sans-serif;
+    font-size: 15px;
+    line-height: 1.75;
+  }
+  .page {
+    max-width: 1020px;
+    margin: 28px auto;
+    background: var(--paper);
+    border-radius: 18px;
+    padding: 46px 52px 40px;
+    box-shadow: 0 18px 50px rgba(15, 23, 42, .10);
+  }
+  .hero {
+    background: linear-gradient(135deg, #0f766e, #1d4ed8);
+    color: #fff;
+    border-radius: 16px;
+    padding: 34px 36px;
+    margin-bottom: 30px;
+  }
+  .hero .kicker {
+    display: inline-block;
+    font-size: 12px;
+    letter-spacing: .12em;
+    text-transform: uppercase;
+    background: rgba(255,255,255,.18);
+    border: 1px solid rgba(255,255,255,.35);
+    padding: 3px 10px;
+    border-radius: 999px;
+    margin-bottom: 12px;
+  }
+  h1 { font-size: 30px; line-height: 1.3; margin: 0 0 10px; }
+  h2 { font-size: 21px; margin: 38px 0 14px; padding-bottom: 8px; border-bottom: 2px solid var(--line); }
+  h3 { font-size: 16px; margin: 20px 0 8px; }
+  p { margin: 8px 0; }
+  .muted { color: var(--muted); }
+  .small { font-size: 13px; }
+  .lead { font-size: 16px; }
+
+  .flow {
+    display: grid;
+    grid-template-columns: 1fr 44px 1fr;
+    gap: 10px;
+    align-items: stretch;
+    margin: 18px 0 8px;
+  }
+  .flow .box {
+    border: 1.5px solid var(--line);
+    border-radius: 14px;
+    padding: 18px;
+    background: var(--wash);
+  }
+  .flow .box strong { display: block; font-size: 16px; margin-bottom: 6px; }
+  .flow .arrow {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 26px;
+    color: var(--blue);
+    font-weight: 700;
+  }
+  .two {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 18px;
+  }
+  .card {
+    border: 1.5px solid var(--line);
+    border-radius: 14px;
+    padding: 18px 20px;
+    background: #fff;
+  }
+  .card h3 { margin-top: 0; }
+  .card.blue { border-color: #bfdbfe; background: #f5f9ff; }
+  .card.green { border-color: #bbf7d0; background: #f4fff7; }
+  .card.amber { border-color: #fde68a; background: #fffaf0; }
+  .card.red { border-color: #fecaca; background: #fff5f5; }
+  .tag {
+    display: inline-block;
+    font-size: 12px;
+    font-weight: 700;
+    padding: 2px 9px;
+    border-radius: 999px;
+    margin-bottom: 8px;
+    letter-spacing: .04em;
+  }
+  .tag.blue { color: #1e3a8a; background: #dbeafe; }
+  .tag.green { color: #14532d; background: #dcfce7; }
+  .tag.amber { color: #78350f; background: #fef3c7; }
+  .tag.red { color: #7f1d1d; background: #fee2e2; }
+
+  .steps { margin: 10px 0 0; padding: 0; list-style: none; }
+  .steps > li {
+    display: flex;
+    gap: 14px;
+    align-items: flex-start;
+    padding: 14px 0;
+    border-bottom: 1px dashed var(--line);
+  }
+  .steps > li:last-child { border-bottom: 0; }
+  .num {
+    flex: 0 0 30px;
+    width: 30px;
+    height: 30px;
+    border-radius: 50%;
+    background: var(--blue);
+    color: #fff;
+    font-weight: 700;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 14px;
+    margin-top: 2px;
+  }
+  .num.teal { background: var(--teal); }
+  .num.amber { background: var(--amber); }
+  .step-body { flex: 1; min-width: 0; }
+
+  pre {
+    background: #0f172a;
+    color: #d1fae5;
+    border-radius: 10px;
+    padding: 14px 16px;
+    overflow-x: auto;
+    font-family: Consolas, "Courier New", monospace;
+    font-size: 13px;
+    line-height: 1.7;
+    margin: 10px 0;
+  }
+  code {
+    font-family: Consolas, "Courier New", monospace;
+    background: #eef2f7;
+    padding: 1px 5px;
+    border-radius: 4px;
+    font-size: 13px;
+  }
+  pre code { background: transparent; padding: 0; color: inherit; }
+
+  .prompt {
+    border-left: 4px solid var(--teal);
+    background: #f0fdfa;
+    padding: 12px 16px;
+    border-radius: 0 10px 10px 0;
+    font-size: 14px;
+    margin: 10px 0;
+  }
+  .terminal {
+    background: #0b1220;
+    color: #d1fae5;
+    border-radius: 12px;
+    padding: 16px 18px;
+    font-family: Consolas, "Courier New", monospace;
+    font-size: 13px;
+    line-height: 1.9;
+  }
+  .terminal .ok { color: #86efac; font-weight: 700; }
+  .terminal .warn { color: #fcd34d; font-weight: 700; }
+  .terminal .dim { color: #94a3b8; }
+
+  .term-grid {
+    display: grid;
+    grid-template-columns: 1fr 1.6fr;
+    border: 1.5px solid var(--line);
+    border-radius: 14px;
+    overflow: hidden;
+  }
+  .term-grid > div {
+    padding: 10px 14px;
+    border-bottom: 1px solid var(--line);
+  }
+  .term-grid > div:nth-child(odd) {
+    background: var(--wash);
+    font-weight: 700;
+  }
+  .term-grid > div:nth-last-child(-n+2) { border-bottom: 0; }
+
+  .analogy {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 14px;
+    margin: 14px 0;
+  }
+  .analogy .item {
+    border: 1.5px solid var(--line);
+    border-radius: 14px;
+    padding: 16px;
+    text-align: center;
+    background: var(--wash);
+  }
+  .analogy .icon {
+    width: 46px;
+    height: 46px;
+    border-radius: 50%;
+    margin: 0 auto 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: #dbeafe;
+    color: #1e3a8a;
+    font-weight: 800;
+    font-size: 18px;
+  }
+  .analogy .item strong { display: block; margin-bottom: 4px; }
+
+  .checklist { margin: 8px 0 0; padding-left: 20px; }
+  .checklist li { margin: 6px 0; }
+
+  .footer {
+    margin-top: 36px;
+    padding-top: 16px;
+    border-top: 1px solid var(--line);
+    color: var(--muted);
+    font-size: 12px;
+  }
+  .pill {
+    display: inline-block;
+    font-size: 12px;
+    padding: 2px 8px;
+    border-radius: 999px;
+    background: #eef2f7;
+    color: var(--muted);
+    margin-right: 6px;
+  }
+
+  
+  .catalog {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 13px;
+    margin: 8px 0 16px;
+  }
+  .catalog th, .catalog td {
+    border-bottom: 1px solid var(--line);
+    padding: 7px 8px;
+    text-align: left;
+    vertical-align: top;
+  }
+  .catalog th { background: var(--wash); font-weight: 700; }
+  .catalog .grp td {
+    background: #f0fdfa;
+    color: var(--teal);
+    font-weight: 700;
+    border-bottom: 1px solid #99f6e4;
+    padding-top: 10px;
+  }
+  .catalog code { font-size: 12px; }
+  .say {
+    background: #f8fafc;
+    border: 1px dashed var(--line);
+    border-radius: 10px;
+    padding: 10px 14px;
+    margin: 8px 0;
+    font-size: 13.5px;
+  }
+
+  @media (max-width: 760px) {
+    .page { margin: 0; border-radius: 0; padding: 24px 18px; }
+    .flow { grid-template-columns: 1fr; }
+    .flow .arrow { transform: rotate(90deg); }
+    .two, .analogy { grid-template-columns: 1fr; }
+    h1 { font-size: 24px; }
+  }
+
+  @media print {
+    @page { size: A4; margin: 13mm; }
+    body { background: #fff; font-size: 11.5px; }
+    .page { max-width: none; margin: 0; padding: 0; box-shadow: none; border-radius: 0; }
+    .hero { padding: 20px 22px; margin-bottom: 18px; }
+    h2 { margin-top: 22px; }
+    .page-break { page-break-before: always; }
+    pre, .terminal, .card, .flow .box, .analogy .item { break-inside: avoid; }
+  }
+</style>
+</head>
+<body>
+<div class="page">
+
+  <header class="hero">
+    <span class="kicker">JASP-Bridge · 图文版</span>
+    <h1>把 JASP 接到 AI 对话里</h1>
+    <p class="lead">不需要编程。照着图做，装一次，以后用说话的方式做统计分析。</p>
+    <p class="small">版本 0.2.0 · 22 类分析 · Windows 10/11 · 需要先安装 JASP</p>
+  </header>
+
+  <h2>先看这张图：你该走哪条路</h2>
+  <div class="flow">
+    <div class="box">
+      <strong>你平时用 WorkBuddy 吗？</strong>
+      <span class="muted">如果已经装了 WorkBuddy，走左边这条路最省事。</span>
+    </div>
+    <div class="arrow">→</div>
+    <div class="box">
+      <strong>是：装到 WorkBuddy</strong>
+      <span class="muted">把安装包发给它，或者手动三步。</span>
+    </div>
+  </div>
+  <div class="flow">
+    <div class="box">
+      <strong>不，只用 DeepSeek / 豆包官方桌面版？</strong>
+      <span class="muted">官方桌面版通常没有“装插件”的入口，不能直接装。</span>
+    </div>
+    <div class="arrow">→</div>
+    <div class="box">
+      <strong>换一个“能装插件”的聊天软件</strong>
+      <span class="muted">比如 Cherry Studio。模型还是 DeepSeek / 豆包。</span>
+    </div>
+  </div>
+
+  <p class="small muted">这份图文是示意图，不是软件截图。不同版本的菜单文字可能略有不同，认准关键词即可。</p>
+
+  <h2 class="page-break">路线 A：装到 WorkBuddy</h2>
+
+  <div class="card green">
+    <span class="tag green">最简版</span>
+    <h3>把安装包直接发给 WorkBuddy</h3>
+    <p>把 <code>jasp-bridge-0.2.0-portable.zip</code> 拖进 WorkBuddy 对话框，然后发这段话：</p>
+    <div class="prompt">
+      这是我下载的 JASP-Bridge 安装包。请帮我：<br>
+      1. 解压到一个合适的位置；<br>
+      2. 检查我电脑上是否安装了 JASP；<br>
+      3. 如果已安装，运行包里的 install.ps1 完成安装；<br>
+      4. 安装完成后告诉我怎么验证。<br>
+      不要覆盖已有的 runtime 和 sessions。
+    </div>
+    <p class="small muted">前提：你的 WorkBuddy 版本允许执行本地命令或文件操作。如果它不能执行，就用下面的手动三步。</p>
+  </div>
+
+  <h3>手动三步</h3>
+  <ol class="steps">
+    <li>
+      <span class="num">1</span>
+      <div class="step-body">
+        <strong>解压 zip</strong>
+        <p class="muted">右键压缩包 → 解压到当前文件夹。不需要改任何文件。</p>
+      </div>
+    </li>
+    <li>
+      <span class="num">2</span>
+      <div class="step-body">
+        <strong>在解压后的文件夹里打开终端</strong>
+        <p class="muted">在文件夹空白处 <code>Shift + 右键</code>，选择“在终端中打开”或“在此处打开 PowerShell 窗口”。</p>
+      </div>
+    </li>
+    <li>
+      <span class="num">3</span>
+      <div class="step-body">
+        <strong>运行安装命令</strong>
+        <pre><code>powershell -ExecutionPolicy Bypass -File .\install.ps1</code></pre>
+        <p class="muted">不需要 <code>cd</code> 到某个固定目录，也不需要改脚本里的路径。</p>
+      </div>
+    </li>
+  </ol>
+
+  <div class="card amber">
+    <span class="tag amber">注意</span>
+    <strong>JASP 必须先装好。</strong>
+    安装脚本会从你电脑上的 JASP 复制一份计算引擎（约 1.7 GB）。不需要单独装 R、Node 或 jaspTools。
+  </div>
+
+  <h3>安装完成后怎么验证</h3>
+  <p>重启 WorkBuddy，然后在对话里说：</p>
+  <div class="prompt">检查 JASP 状态</div>
+  <p>正常情况下你会看到类似：</p>
+  <div class="terminal">
+    <div>JASP：<span class="ok">已找到</span></div>
+    <div>JASP 运行时：<span class="ok">可用</span></div>
+    <div>Rscript：<span class="ok">可用</span></div>
+    <div>jaspTools：<span class="ok">0.20.1</span></div>
+    <div>无头 R：<span class="ok">可用</span></div>
+  </div>
+  <p class="small muted">看到“无头 R：可用”就说明能自动分析了。如果显示不可用，先确认 JASP 是否装好，再重新运行 <code>install.ps1</code>。</p>
+
+  <h2 class="page-break">路线 B：用 DeepSeek / 豆包的模型</h2>
+
+  <div class="card red">
+    <span class="tag red">先说清楚</span>
+    <strong>DeepSeek、豆包的官方桌面版，通常不能直接装这个插件。</strong>
+    <p>它们没有“加载本地插件”的入口。你能在设置里找“MCP / 插件 / 工具 / 自定义连接器”；如果找不到，就不能直接接。</p>
+  </div>
+
+  <p>可以这样理解：</p>
+  <div class="analogy">
+    <div class="item">
+      <div class="icon">脑</div>
+      <strong>DeepSeek / 豆包</strong>
+      <span class="muted">负责思考和对话</span>
+    </div>
+    <div class="item">
+      <div class="icon">线</div>
+      <strong>JASP-Bridge</strong>
+      <span class="muted">把大脑和计算器接起来</span>
+    </div>
+    <div class="item">
+      <div class="icon">算</div>
+      <strong>JASP</strong>
+      <span class="muted">真正算统计</span>
+    </div>
+  </div>
+  <p>官方桌面版像“没有插线口的手机”；你需要换一个“有插线口”的聊天软件，比如 <strong>Cherry Studio</strong>。</p>
+
+  <h3>四步接好</h3>
+  <ol class="steps">
+    <li>
+      <span class="num teal">1</span>
+      <div class="step-body">
+        <strong>装一个能装插件的聊天软件</strong>
+        <p class="muted">推荐 Cherry Studio（免费）。Cline、Roo Code 也可以，但更适合技术用户。</p>
+      </div>
+    </li>
+    <li>
+      <span class="num teal">2</span>
+      <div class="step-body">
+        <strong>把模型的“钥匙”填进去</strong>
+        <p class="muted">在聊天软件的“模型服务 / 提供商”里，选择 DeepSeek 或豆包，粘贴 API Key。</p>
+        <table class="small" style="width:100%; border-collapse:collapse; margin-top:8px;">
+          <tr><th style="text-align:left; padding:4px 6px; border-bottom:1px solid var(--line);">模型</th><th style="text-align:left; padding:4px 6px; border-bottom:1px solid var(--line);">地址</th><th style="text-align:left; padding:4px 6px; border-bottom:1px solid var(--line);">模型名</th></tr>
+          <tr><td style="padding:4px 6px; border-bottom:1px solid var(--line);">DeepSeek</td><td style="padding:4px 6px; border-bottom:1px solid var(--line);"><code>https://api.deepseek.com/v1</code></td><td style="padding:4px 6px; border-bottom:1px solid var(--line);"><code>deepseek-chat</code></td></tr>
+          <tr><td style="padding:4px 6px;">豆包</td><td style="padding:4px 6px;"><code>https://ark.cn-beijing.volces.com/api/v3</code></td><td style="padding:4px 6px;"><code>ep-...</code> 接入点</td></tr>
+        </table>
+        <p class="small muted">豆包要在火山方舟开通，步骤比 DeepSeek 多；看不懂就找会电脑的朋友帮一次。</p>
+      </div>
+    </li>
+    <li>
+      <span class="num teal">3</span>
+      <div class="step-body">
+        <strong>把 JASP-Bridge 接上</strong>
+        <p class="muted">在聊天软件的“MCP 服务器 / 插件 / 扩展”里添加服务器，填两个路径：</p>
+        <pre><code>程序：&lt;你的安装目录&gt;\node.exe
+启动文件：&lt;你的安装目录&gt;\src\server.js</code></pre>
+        <p class="muted">或者直接导入 <code>configs/mcp/jasp-bridge.json</code>，再把 <code>&lt;你的安装目录&gt;</code> 换成实际路径。</p>
+      </div>
+    </li>
+    <li>
+      <span class="num teal">4</span>
+      <div class="step-body">
+        <strong>重启并验证</strong>
+        <p class="muted">重启聊天软件，在对话里说“检查 JASP 状态”。看到“无头 R：可用”就行。</p>
+      </div>
+    </li>
+  </ol>
+
+  <div class="card amber">
+    <span class="tag amber">不想装额外软件？</span>
+    <p>也可以只用官方桌面版，但只能让模型<strong>帮你规划</strong>分析步骤，你自己在 JASP 里点，再把结果贴回对话让模型解释。这不是自动执行。</p>
+  </div>
+
+  <h2 class="page-break">路径怎么找</h2>
+  <div class="two">
+    <div class="card blue">
+      <h3>方法 1：复制文件地址</h3>
+      <p>在资源管理器里按住 <code>Shift</code>，右键文件，选择“复制文件地址”。</p>
+    </div>
+    <div class="card blue">
+      <h3>方法 2：拖进 PowerShell</h3>
+      <p>输入 <code>cd </code>（后面有空格），然后把文件夹拖进窗口，按回车。</p>
+    </div>
+    <div class="card blue">
+      <h3>方法 3：拖进对话</h3>
+      <p>直接把 CSV 或模板拖进 WorkBuddy 对话框，让它读取。</p>
+    </div>
+    <div class="card blue">
+      <h3>路径有空格</h3>
+      <p>用英文引号包起来，例如 <code>"C:\Program Files\JASP\JASPDesktop.exe"</code>。</p>
+    </div>
+  </div>
+
+
+  <h2 class="page-break">支持的 22 类分析</h2>
+  <p>插件把你的原话识别成下面的方法，再调用本机 JASP 引擎计算。先给出计划让你确认，确认后才真正跑。</p>
+  <p class="small muted">版本 0.2.0 在原来 17 类的基础上，增加了贝叶斯 Process、贝叶斯线性/广义混合模型、MIMIC 与潜变量增长曲线。</p>
+
+  <table class="catalog">
+    <thead>
+      <tr><th style="width:22%">方法（对插件说）</th><th style="width:24%">JASP 分析</th><th>什么时候用 / 要点</th></tr>
+    </thead>
+    <tbody>
+      <tr class="grp"><td colspan="3">描述与相关</td></tr>
+      <tr><td><code>descriptives</code><br>描述统计</td><td><code>Descriptives</code></td><td>均值、标准差、频数。可以说“对年龄和绩效做描述统计”。</td></tr>
+      <tr><td><code>reliability</code><br>信度</td><td><code>reliabilityUnidimensionalFrequentist</code></td><td>量表内部一致性（α / ω）。需要一组题项，例如 sat1 到 sat5。</td></tr>
+      <tr><td><code>correlation</code><br>相关</td><td><code>Correlation</code></td><td>Pearson / Spearman / Kendall。可以说“看满意度和绩效的相关，用 Spearman”。</td></tr>
+
+      <tr class="grp"><td colspan="3">均值比较</td></tr>
+      <tr><td><code>ttest_independent</code><br>独立样本 t 检验</td><td><code>TTestIndependentSamples</code></td><td>两组比较，例如男女在绩效上的差异。超过两水平会提示改用 ANOVA。</td></tr>
+      <tr><td><code>paired_ttest</code><br>配对 t 检验</td><td><code>TTestPairedSamples</code></td><td>同一批人的前后测或配对观测。</td></tr>
+      <tr><td><code>anova</code><br>方差分析</td><td><code>Anova</code></td><td>单因素或多因素。自动补齐交互项，水平数 &gt; 2 时默认事后比较；可做简单效应与 Helmert 等对比。</td></tr>
+      <tr><td><code>ancova</code><br>协方差分析</td><td><code>Ancova</code></td><td>分组比较并控制连续协变量。</td></tr>
+      <tr><td><code>rm_anova</code><br>重复测量方差分析</td><td><code>AnovaRepeatedMeasures</code></td><td>宽格式、单一被试内因子，可叠加 1–2 个组间因子。含球形检验与 Greenhouse-Geisser 校正。</td></tr>
+
+      <tr class="grp"><td colspan="3">回归</td></tr>
+      <tr><td><code>regression</code><br>多元线性回归</td><td><code>RegressionLinear</code></td><td>连续因变量的预测或解释，例如“年龄和满意度如何预测绩效”。</td></tr>
+
+      <tr class="grp"><td colspan="3">中介与调节（Process）</td></tr>
+      <tr><td><code>process</code><br>Process 中介/调节</td><td><code>ClassicProcess</code></td><td>Hayes 模型 1 / 4 / 6 / 7 / 8 / 14 / 15。中介默认 1000 次 bootstrap。可指定 FIML。</td></tr>
+      <tr><td><code>process_bayesian</code><br>贝叶斯 Process</td><td><code>BayesianProcess</code></td><td>同一套模型的贝叶斯版本（blavaan / Stan）。说“贝叶斯中介”或“贝叶斯调节”。默认 3 条链、500 次 burn-in、1000 次抽样，可能需要几分钟。</td></tr>
+
+      <tr class="grp"><td colspan="3">因子分析</td></tr>
+      <tr><td><code>efa</code><br>探索性因子分析</td><td><code>exploratoryFactorAnalysis</code></td><td>探索题项结构，至少 3 题。含 KMO / Bartlett、载荷与碎石图。</td></tr>
+      <tr><td><code>pca</code><br>主成分分析</td><td><code>principalComponentAnalysis</code></td><td>降维与成分载荷。</td></tr>
+      <tr><td><code>cfa</code><br>验证性因子分析</td><td><code>confirmatoryFactorAnalysis</code></td><td>需要在 <code>options.factors</code> 给出因子结构，例如 <code>[{name, indicators}]</code>。</td></tr>
+
+      <tr class="grp"><td colspan="3">结构方程</td></tr>
+      <tr><td><code>sem</code><br>结构方程模型</td><td><code>SEM</code></td><td>需要 <code>options.models</code> 传入 lavaan 语法，例如 <code>F1 =~ sat1 + sat2 + sat3</code>。</td></tr>
+      <tr><td><code>plssem</code><br>PLS-SEM</td><td><code>PLSSEM</code></td><td>偏最小二乘 / 复合测量。语法用 <code>-&gt;</code>，并给出路径。</td></tr>
+      <tr><td><code>mimic</code><br>MIMIC 模型</td><td><code>MIMIC</code></td><td>用多个指标定义一个潜变量，再用连续或<strong>二分</strong>变量预测它。至少 3 个指标、1 个预测变量。多于 2 水平的分类变量（如学历）不能直接当预测变量。</td></tr>
+      <tr><td><code>latent_growth</code><br>潜变量增长曲线</td><td><code>LatentGrowthCurve</code></td><td>至少 3 个连续重复测量变量（宽格式，按时序）。默认拦截 + 线性；可以说“二次/三次”。时点默认 0, 1, 2, …，也可用 <code>options.timings</code> 指定。</td></tr>
+
+      <tr class="grp"><td colspan="3">混合模型</td></tr>
+      <tr><td><code>mixed_lmm</code><br>线性混合模型</td><td><code>MixedModelsLMM</code></td><td>长格式。指定因变量、固定效应、随机分组（如被试 ID）。可说“随机斜率”。</td></tr>
+      <tr><td><code>mixed_glmm</code><br>广义线性混合模型</td><td><code>MixedModelsGLMM</code></td><td>二项 / 泊松 / 高斯等分布族。说“二项广义线性混合模型”会选用 Bernoulli + logit。</td></tr>
+      <tr><td><code>mixed_blmm</code><br>贝叶斯线性混合模型</td><td><code>MixedModelsBLMM</code></td><td>连续因变量的贝叶斯混合模型（rstanarm）。说“贝叶斯线性混合模型”。默认 MCMC 同上，首次可能需数分钟。</td></tr>
+      <tr><td><code>mixed_bglmm</code><br>贝叶斯广义线性混合模型</td><td><code>MixedModelsBGLMM</code></td><td>贝叶斯 GLMM。说“贝叶斯广义线性混合模型”或“贝叶斯二项混合”。支持 Bernoulli、Poisson、高斯等族。</td></tr>
+    </tbody>
+  </table>
+
+  <h3>可以这样开口</h3>
+  <div class="say">“用 demo.csv，看 sat1 到 sat5 的信度，再做满意度与绩效的相关。”</div>
+  <div class="say">“age 通过 sat_mean 影响 perf，做中介，用 bootstrap。”要贝叶斯版本就说：“做贝叶斯中介”。</div>
+  <div class="say">“做 MIMIC：sat1 到 sat5 当指标，age 当预测变量。”</div>
+  <div class="say">“拟合潜变量增长曲线，变量是 t1 到 t4。”</div>
+  <div class="say">“以 score 为因变量，wave 和 condition 为固定效应，按 subject 做随机截距。”要贝叶斯或广义模型时，把“贝叶斯”“广义/二项”说清楚。</div>
+
+  <div class="card amber">
+    <span class="tag amber">注意</span>
+    <ul class="checklist">
+      <li>分析都在本机 JASP 引擎里跑，不会把原始数据传到网上。</li>
+      <li>贝叶斯模型要抽样，比频率派慢；结果里应看后验估计、可信区间、R̂ 和有效样本量。</li>
+      <li>CFA / SEM / PLS-SEM 需要你提供模型结构或 lavaan 语法，插件不会凭空编模型。</li>
+      <li>导出 <code>.jasp</code> 文件后，可用 JASP 打开并 Refresh 查看已写入的结果。</li>
+    </ul>
+  </div>
+
+
+  <h2>名词小抄</h2>
+  <div class="term-grid">
+    <div>插件 / MCP</div><div>AI 和本地软件之间的“插头标准”。</div>
+    <div>API Key</div><div>模型服务的“钥匙”，像密码，不能给别人。</div>
+    <div>Base URL</div><div>模型服务的“地址”。</div>
+    <div>安装目录</div><div>插件文件所在的文件夹，通常在 <code>$HOME\.workbuddy\jasp-bridge</code>。</div>
+    <div>运行时</div><div>JASP 自带计算引擎的一份副本，约 1.7 GB。</div>
+    <div>宿主</div><div>能装插件的聊天软件，比如 WorkBuddy、Cherry Studio。</div>
+  </div>
+
+  <h2>常见问题</h2>
+  <div class="two">
+    <div class="card">
+      <h3>没装 JASP</h3>
+      <p>先装 JASP（Microsoft Store 或官网桌面版）。插件不能代替 JASP。</p>
+    </div>
+    <div class="card">
+      <h3>提示找不到 Node</h3>
+      <p>用带 <code>node.exe</code> 的便携包；或者安装 Node 20+。</p>
+    </div>
+    <div class="card">
+      <h3>WorkBuddy 看不到插件</h3>
+      <p>检查 <code>$HOME\.workbuddy\mcp.json</code>，然后重启 WorkBuddy。</p>
+    </div>
+    <div class="card">
+      <h3>提示禁止运行脚本</h3>
+      <p>用文档里的命令：<code>powershell -ExecutionPolicy Bypass -File .\install.ps1</code></p>
+    </div>
+    <div class="card">
+      <h3>首次很慢</h3>
+      <p>在复制约 1.7 GB 运行时，等几分钟；之后首次加载 worker 约 5–10 秒。</p>
+    </div>
+    <div class="card">
+      <h3>DeepSeek/豆包设置里没有 MCP</h3>
+      <p>说明这个版本不支持本地插件。换 Cherry Studio 等支持 MCP 的客户端。</p>
+    </div>
+  </div>
+
+  <h2>安全提醒</h2>
+  <div class="card green">
+    <ul class="checklist">
+      <li>API Key 不要截图、不要发人、不要上传网盘。</li>
+      <li>CSV 和 JASP 都在本机，插件不上传原始数据。</li>
+      <li>只有工具返回的结果表会进入模型对话。</li>
+      <li>不要把 JASP 通过公网隧道暴露给云端智能体。</li>
+    </ul>
+  </div>
+
+  <div class="footer">
+    <span class="pill">JASP-Bridge 0.2.0 · 22 类分析</span>
+    <span class="pill">示意图，不是软件截图</span>
+    <span class="pill">菜单文字以实际版本为准</span>
+    <p>完整文字版：GUIDE.md · DeepSeek/豆包方案：SUPPORT-DEEPSEEK-DOUBAO.md · 配置模板：configs/</p>
+  </div>
+
+</div>
+</body>
+</html>

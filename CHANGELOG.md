@@ -1,0 +1,61 @@
+# Changelog
+
+## 0.2.0 - 2026-11-25
+
+分析类型从 8 类扩到 **22 类**，并补齐事后比较、简单效应、对比，以及真正的 `.jasp` 结果写入。
+
+### 频率派扩展（8 → 17）
+
+- 新增 `rm_anova`（重复测量方差分析）：宽格式单元格、单被试内因子、可选组间因子（混合设计）、球形检验、Greenhouse-Geisser 校正、偏 eta²、事后比较；
+- 新增 `process`（JASP ClassicProcess）：Model 1 调节、4 简单中介、6 链式中介、7/8/14/15 有调节的中介，含 bootstrap 间接效应 CI、简单斜率、调节中介指数、R² 与概念路径图；对话中提到缺失或 FIML 时可用 FIML；
+- 新增 `efa` / `pca` / `cfa`（jaspFactor）：探索性因子分析、主成分分析、验证性因子分析（EFA/PCA 至少 3 个观测变量；CFA 需 `options.factors`）；
+- 新增 `sem` / `plssem`（jaspSem）：结构方程与偏最小二乘结构方程，`options.models` 传 lavaan / PLS 语法，插件自动转换成 JASP 的语法表结构；
+- 新增 `mixed_lmm` / `mixed_glmm`（jaspMixedModels）：线性与广义线性混合模型，随机截距，可选随机斜率。
+
+### 贝叶斯、MIMIC 与增长曲线（17 → 22）
+
+- 新增 `process_bayesian`（JASP BayesianProcess，Hayes 模型与频率派 Process 相同）、`mixed_blmm`（MixedModelsBLMM / rstanarm）、`mimic`（jaspSem::MIMIC）、`latent_growth`（LatentGrowthCurve）。均已用本机 JASP 运行时实测：MIMIC/LGC 拟合指数与路径表完整；BLMM 与贝叶斯 Process 完成 MCMC 并写出后验估计、可信区间与 R̂。
+- 新增 `mixed_bglmm`（JASP MixedModelsBGLMM / rstanarm），分析类型从 21 扩到 **22**。支持 Bernoulli、Poisson、高斯等分布族；计划器把“贝叶斯广义/二项混合”优先于普通贝叶斯线性混合模型。
+- 计划器优先识别「贝叶斯中介/调节」「贝叶斯混合」「MIMIC」「潜变量增长曲线」；频率派 Process / LMM / SEM 原有路径不变。BayesianProcess 写入 jaspProcess 默认先验（beta/nu/psi/rho），避免 blavaan 语法翻译失败。
+
+### 事后比较与简单效应
+
+- 单因素 `anova` 自动追加事后比较（水平数 > 2 或用户明确要求），支持 Tukey / Holm / Bonferroni / Scheffé / Šidák；重复测量另支持 FDR；
+- 简单效应：支持一个因子在另一个因子的各水平上比较（含第二个调节因子），重复测量可反向（组间因子在各时间点上）；
+- 对比（contrast）：支持 Helmert / 多项式 / 重复 / 差异 / 偏差 / 简单预设类型，并可通过 `options.contrasts` + `options.customContrasts` 传入任意系数矩阵；
+- 两因素及以上 ANOVA 自动补齐主效应项与全部交互项。
+
+### 工具、`.jasp` 写盘与文档
+
+- `jasp_export(format="jasp")` 生成真正的 `.jasp` 归档：写入查看器结果（`analyses.json` 的 `results`，`status=complete`）和官方内部 `resources/N/jaspResults.json` 及完成标记；指定 `run_id`，否则用该计划最近一次成功运行。JASP 0.99.10 对 ANOVA 示例打开并 Refresh 可显示已写入的结果；
+- 同时仍导出 JASP 复现包（zip，含 data.csv / analyses.json / request.json / run_analysis.R / result.json / README）；
+- 结果表中的编码列名（`jaspColumnN`）自动还原为原始变量名，覆盖表标题、表头与 CSV 文件名；
+- 新增进度接口：`npm run progress` 起一个只读 HTTP 端口，并新增 MCP 工具 `jasp_progress`；`PROGRESS.json` 作为进度事实来源；
+- 重新生成 `docs/visual-guide.html` 与 `docs/visual-guide.pdf`（版本 0.2.0，覆盖全部 22 类分析、开口示例与安装路径）；
+- 新增示例数据 `examples/factor-demo.csv`（两因子结构）与 `examples/mixed-demo.csv`（12 被试 × 4 时点）。
+- 在 GitHub 公开发布：https://github.com/nanple/jasp-bridge ；Release `v0.2.0` 提供含 `node.exe` 的便携 zip 与 `latest.json`（不含 JASP 运行时）。
+
+### 修复与运行时补丁
+
+- 计划器支持 `sat1 到 sat5` 这类区间变量写法，并优先识别“重复测量 / 被试内 / 配对 / ANCOVA / 中介”等方法短语；
+- 分析核心跳过 JASP 的结构化默认值（空的 `postHocTerms` / `marginalMeanTerms` 等），避免 JASP 把空项当成名为 `variable` 的因子而崩溃；
+- `jaspBase::.checkVariance` 兼容 R ≥ 4.5（`var(factor)` 已废弃），混合模型的全列方差检查不再报错；
+- 混合模型运行时 attach `lme4`（模块调用 lme4 内部函数不带命名空间前缀）；
+- 修复 `run_analysis.R` 一次性回退在加载运行时前检查 `jsonlite` 导致误报的问题。
+
+## 0.1.0 - 2026-11-24
+
+首个可运行版本：
+
+- WorkBuddy MCP 插件骨架，提供 15 个工具；
+- 8 类 JASP 分析：描述统计、信度、相关、独立样本 t 检验、配对样本 t 检验、ANCOVA、单因素 ANOVA、线性回归；
+- 结果表导出 CSV（UTF-8 BOM，Excel 可直接打开）；
+- JASP 图片回传（PNG/SVG）与 `plots/` 工件；
+- 分析计划确认与增量修改；
+- 从本机 JASP 构建离线运行时（`setup_runtime.ps1`）；
+- 常驻 R worker，首次加载后复用；
+- 模板报告模式（JASP `--report`）；
+- 便携 zip 安装（方案 B）；
+- 更新检查与下载：`jasp_check_update`、`jasp_download_update`、`update.ps1`；
+- 随包指南 `GUIDE.md` 与示例数据 `examples/demo.csv`；
+- DeepSeek / 豆包支持方案与 `configs/` 配置模板。

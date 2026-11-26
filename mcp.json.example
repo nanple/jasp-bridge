@@ -1,0 +1,15 @@
+{
+  "mcpServers": {
+    "jasp-bridge": {
+      "command": "node",
+      "args": [
+        "C:/path/to/jasp-bridge/src/server.js"
+      ],
+      "env": {
+        "JASP_BRIDGE_HOME": "C:/Users/<you>/.workbuddy/jasp-bridge",
+        "JASP_RUNTIME": "C:/Users/<you>/.workbuddy/jasp-bridge/runtime",
+        "JASP_BRIDGE_TIMEOUT_MS": "300000"
+      }
+    }
+  }
+}

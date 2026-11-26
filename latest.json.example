@@ -1,0 +1,8 @@
+{
+  "version": "0.2.0",
+  "url": "https://github.com/nanple/jasp-bridge/releases/download/v0.2.0/jasp-bridge-0.2.0-portable.zip",
+  "sha256": "0000000000000000000000000000000000000000000000000000000000000000",
+  "notes": "22 类分析：在频率派 17 类之上，新增贝叶斯 Process、贝叶斯线性/广义混合模型（MixedModelsBLMM / BGLMM）、MIMIC、潜变量增长曲线；.jasp 写入真实结果。此文件是清单模板；正式 sha256 与下载地址以 GitHub Release 中的 latest.json 为准。",
+  "runtime_required": false,
+  "min_plugin_version": "0.1.0"
+}

@@ -1,0 +1,15 @@
+{
+  "mcpServers": {
+    "jasp-bridge": {
+      "command": "<你的安装目录>\\node.exe",
+      "args": [
+        "<你的安装目录>\\src\\server.js"
+      ],
+      "env": {
+        "JASP_BRIDGE_HOME": "<你的安装目录>",
+        "JASP_RUNTIME": "<你的安装目录>\\runtime",
+        "JASP_BRIDGE_TIMEOUT_MS": "300000"
+      }
+    }
+  }
+}

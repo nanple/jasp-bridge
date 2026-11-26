@@ -1,0 +1,8 @@
+{
+  "version": "0.2.0",
+  "url": "https://github.com/nanple/jasp-bridge/releases/download/v0.2.0/jasp-bridge-0.2.0-portable.zip",
+  "sha256": "6f5b3f4f9ce32ec614f9f9923267291c3050905db286173e586a1ae0f09403f5",
+  "notes": "22 类分析：在 0.2.0 频率派 17 类之上，新增贝叶斯 Process、贝叶斯线性/广义混合模型（MixedModelsBLMM / BGLMM）、MIMIC、潜变量增长曲线；.jasp 写入真实结果；图文指南已覆盖全部 22 类。官方便携包含 Windows node.exe，不含 JASP 运行时。",
+  "runtime_required": false,
+  "min_plugin_version": "0.1.0"
+}

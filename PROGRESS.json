@@ -1,0 +1,102 @@
+{
+  "schema": "jasp-bridge/progress@1",
+  "updated_at": "2026-11-26T00:32:50.000Z",
+  "version": "0.2.0",
+  "phase": "0.2.0 已在 GitHub 公开发布",
+  "status": "released",
+  "summary": "22 类 JASP 分析已接入并经真实引擎验证（含 MixedModelsBGLMM）。用户文档已按 22 类与真实能力修订。0.2.0 已发布到 https://github.com/nanple/jasp-bridge ，Release v0.2.0 提供含 node.exe 的便携 zip 与 latest.json。",
+  "completed": [
+    "重复测量 ANOVA（球形检验、GG 校正、混合设计、事后比较）",
+    "ANOVA 事后比较（Tukey/Holm/Bonferroni/Scheffé/Šidák/FDR）",
+    "简单效应：单调节因子 + 第二个调节因子（三因素）",
+    "重复测量简单效应反向（组间因子在各时间点上）",
+    "对比（contrast）：Helmert/多项式/重复/差异/偏差/简单 + 自定义系数矩阵",
+    "Process 中介/调节 Model 1/4/6/7/8/14/15 + FIML",
+    "EFA / PCA / CFA（jaspFactor）",
+    "SEM（jaspSem，lavaan 语法）+ PLS-SEM",
+    "线性混合模型 LMM + 广义线性混合模型 GLMM（jaspMixedModels）",
+    "JASP 复现包导出（jasp_export format=jasp/bundle）",
+    "真正的 .jasp 写盘：analyses.json + manifest.json + internal.sqlite（node:sqlite）",
+    "选项格式转换器：headless 请求 → JASP 桌面格式（types/value 壳、optionKey 集合、.meta shouldEncode）",
+    "从 JASP 官方示例批量提取各分析的默认选项模板（src/export/jaspDefaults.json，85 个模板）",
+    "版本 0.2.0 + 便携包打包（dist/jasp-bridge-0.2.0-portable.zip）+ latest.json 清单",
+    "`.jasp` 写入 jaspResults：analyses.json 的查看器 results（status=complete）+ resources/N/jaspResults.json（内部对象）+ 官方完成标记",
+    "用户在 JASP GUI 打开已写入结果的 ANOVA `.jasp` 并 Refresh：无 fatalError，结果正常显示（约 2026-11-25 18:01 Asia/Shanghai）",
+    "贝叶斯线性混合模型 MixedModelsBLMM（jaspMixedModels，rstanarm）",
+    "贝叶斯 Process（BayesianProcess，Model 1/4/6/7/8/14/15，blavaan/Stan）",
+    "MIMIC 模型（jaspSem::MIMIC，指标≥3 + 连续或二分预测变量）",
+    "潜变量增长曲线 LatentGrowthCurve（截距/线性，可选二次/三次与协变量；时点默认 0,1,2,…）",
+    "贝叶斯广义线性混合模型 MixedModelsBGLMM（jaspMixedModels，rstanarm；Bernoulli / 高斯等族已实测）",
+    "docs/visual-guide.html 与 visual-guide.pdf 已按 22 类分析重新生成（0.2.0）",
+    "?? GitHub ???? nanple/jasp-bridge v0.2.0?? node.exe ??? zip ? latest.json?"
+  ],
+  "next": [
+    "缺失值策略（FIML / 多重插补）扩展到各分析",
+    "Excel（.xlsx）读取支持"
+  ],
+  "known_issues": [
+    "`.jasp` 自动重算：写入真实 jaspResults 后，JASP 0.99.10 `--report`（无 --hide）与用户 GUI 打开+Refresh 均无 fatalError，结果正常显示。模板 moduleVersion（如 jaspAnova 0.95.5）可能与本机模块（0.96.6）不一致，目前只是警告。",
+    "JASP CLI 加 --hide 会切到 Qt 的 minimal 平台插件，本机 Windows 构建没有该插件 → 直接崩溃；本项目的 --report 调用不要带 --hide",
+    "R ≥ 4.5 里 var(factor) 已废弃：已在 scripts/analysis_core.R 里给 jaspBase::.checkVariance 打补丁（混合模型全列方差检查）",
+    "混合模型模块调用 lme4 内部函数不带命名空间前缀 → 运行时需 attach lme4",
+    "简单效应需要平衡数据：因子组合数 > 样本量时必然有空格子，JASP 无法估计（计划器会给出警告）",
+    "贝叶斯分析（MixedModelsBLMM / BayesianProcess）默认 MCMC 为 3 条链、500 次 burn-in、1000 次抽样，单次可能需数分钟；验证时用过更短链，ESS 可能偏低。BayesianProcess 必须带先验默认值（beta/nu/psi/rho），否则 blavaan 会在 lavaan→MCMC 语法翻译时失败。",
+    "MIMIC 的预测变量只允许连续或二分变量（JASP 模块限制）；多于 2 水平的分类变量（如学历）计划器会追问。分析名为 MIMIC（全大写），不是 QML 文件名 Mimic。",
+    "潜变量增长曲线至少需要 3 个连续重复测量变量；时点默认按变量顺序取 0,1,2,…，可用 options.timings = [{variable, timing}] 覆盖。",
+    "MixedModelsBGLMM 与 BLMM 一样，默认 MCMC 为 3 条链、500/1000；验证用过更短链，ESS 可能偏低。因子列方差预检查可能出现非致命 nearOne/NA 警告。"
+  ],
+  "todos": [
+    {
+      "id": "t_jasp_results",
+      "content": "把 jaspResults 写进 .jasp（results 结构 + resources/N/jaspResults.json），让 JASP 打开即显示结果",
+      "status": "completed"
+    },
+    {
+      "id": "t_jasp_rerun",
+      "content": "已确认：用户在 JASP GUI 打开并 Refresh 已写入结果的 .jasp，无 fatalError，结果正常显示（2026-11-25 18:01 Asia/Shanghai）",
+      "status": "completed"
+    },
+    {
+      "id": "t_bayesian",
+      "content": "已封装并经真实引擎验证：MixedModelsBLMM / BayesianProcess，以及 MIMIC / LatentGrowthCurve（分析类型 17→21）",
+      "status": "completed"
+    },
+    {
+      "id": "t_visual_guide",
+      "content": "已重新生成 docs/visual-guide.html 与 visual-guide.pdf（覆盖 22 类分析，含 MixedModelsBGLMM）",
+      "status": "completed"
+    },
+    {
+      "id": "t_publish",
+      "content": "已发布 0.2.0 到 https://github.com/nanple/jasp-bridge/releases/tag/v0.2.0",
+      "status": "completed"
+    }
+  ],
+  "commands": {
+    "smoke": "npm run smoke",
+    "status": "npm run status",
+    "progress": "npm run progress",
+    "build": ".\\build-release.ps1 -Version 0.2.0 -IncludeNode"
+  },
+  "paths": {
+    "recipes": "src/plan/recipes.js",
+    "planner": "src/plan/planner.js",
+    "mcp_server": "src/server.js",
+    "jasp_writer": "src/export/jaspWriter.js",
+    "jasp_options": "src/export/jaspOptions.js",
+    "jasp_defaults": "src/export/jaspDefaults.json",
+    "jasp_export": "src/export/jaspExport.js",
+    "bundle_export": "src/export/jaspBundle.js",
+    "zip": "src/export/zip.js",
+    "progress_snapshot": "src/progress/snapshot.js",
+    "progress_server": "scripts/progress_server.mjs",
+    "analysis_core": "scripts/analysis_core.R",
+    "examples": "examples/",
+    "docs": [
+      "README.md",
+      "GUIDE.md",
+      "HANDOFF.md",
+      "CHANGELOG.md"
+    ]
+  }
+}
