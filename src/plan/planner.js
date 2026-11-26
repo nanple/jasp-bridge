@@ -8,19 +8,10 @@ import {
   resolveProcessModel,
 } from "./recipes.js";
 import { suggestStructure, suggestionWarning } from "./suggest.js";
-
-function toArray(value) {
-  if (value === null || value === undefined || value === "") return [];
-  return Array.isArray(value) ? value.map(String) : [String(value)];
-}
+import { coerceOptions, coerceVariableRoles } from "./coerce.js";
 
 export function normalizeVariables(input = {}) {
-  const result = {};
-  for (const [key, value] of Object.entries(input)) {
-    const list = toArray(value).filter(Boolean);
-    if (list.length > 0) result[key] = list;
-  }
-  return result;
+  return coerceVariableRoles(input);
 }
 
 function variableIndex(session) {
@@ -427,7 +418,7 @@ export function buildPlan({ session, utterance = "", analysis, variables = {}, o
     {
       ...recipe.buildOptions(validation.variables, { utterance, session }),
       ...(suggestion.applied ? suggestion.options : {}),
-      ...options,
+      ...coerceOptions(options || {}),
     },
     validation.variables,
     session

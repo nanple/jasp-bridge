@@ -1,4 +1,5 @@
 import { nowIso, PLUGIN_VERSION } from "../config.js";
+import { coerceOptions } from "./coerce.js";
 
 export function buildRequest(plan, options = {}) {
   if (!plan?.jasp?.analysis) throw new Error("计划缺少 JASP 分析名。");
@@ -9,7 +10,7 @@ export function buildRequest(plan, options = {}) {
     schema: "jasp-bridge/request@1",
     name: plan.jasp.analysis,
     module: plan.jasp.module,
-    options: plan.options,
+    options: coerceOptions(plan.options),
     seed: options.seed ?? 1,
     meta: {
       plugin: "jasp-bridge",
@@ -32,7 +33,7 @@ export function buildTemplate(plan) {
       {
         name: plan.jasp.analysis,
         module: plan.jasp.module,
-        options: plan.options,
+        options: coerceOptions(plan.options),
       },
     ],
     data_requirements: Object.entries(plan.variables).map(([role, names]) => ({

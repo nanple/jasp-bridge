@@ -1,5 +1,12 @@
 # Changelog
 
+## Unreleased
+
+### 修复
+
+- 部分 MCP 宿主会把字符串数组改写成 `{"0":"a","1":"b"}` 这类对象，并把布尔值传成 `"true"` / `"false"` 字符串。`jasp_plan_analysis` / `jasp_update_plan` 的变量参数会因此在校验阶段报 “expected array”，而选项里的 `"false"` 会原样进入 JASP，触发 `!optionToCheck: invalid argument type` 致命错误。现已在参数校验前和写入引擎请求前把这两类值还原。
+
+
 ## 0.3.0 - 2026-11-26
 
 按 3.0 方向做了两件核心改动：更稳妥的变量类型推断，以及由插件给出可确认的分析方案。本版本号是 **0.3.0**，不是 3.0.0。

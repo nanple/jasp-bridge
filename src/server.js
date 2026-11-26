@@ -26,6 +26,7 @@ import { ingestFile, ingestText, profileMarkdown } from "./data/ingest.js";
 import { listRecipes } from "./plan/recipes.js";
 import { buildSnapshot, renderMarkdown } from "./progress/snapshot.js";
 import { buildPlan, patchPlan, planMarkdown } from "./plan/planner.js";
+import { booleanArg, optionsArg, variableRolesArg } from "./plan/toolArgs.js";
 import { buildRequest, buildTemplate, requestMarkdown } from "./plan/spec.js";
 import {
   capabilitiesMarkdown,
@@ -149,7 +150,7 @@ server.registerTool(
     description:
       "检查本机 JASP、Rscript、jaspTools 是否可用，返回可用后端（无头 R / CLI 模板重放 / dry-run）。开始任何分析前先调用。",
     inputSchema: {
-      refresh: z.boolean().optional().describe("是否强制重新探测（默认使用 60 秒缓存）"),
+      refresh: booleanArg("是否强制重新探测（默认使用 60 秒缓存）"),
     },
   },
   async ({ refresh }) => {
@@ -520,11 +521,8 @@ server.registerTool(
         ])
         .optional()
         .describe("显式指定方法；不传则按关键词自动识别"),
-      variables: z
-        .record(z.array(z.string()))
-        .optional()
-        .describe('变量角色映射，例如 {"dependent":["perf"],"group":["gender"]}'),
-      options: z.record(z.any()).optional().describe("覆盖默认 JASP 选项（高级用法）"),
+      variables: variableRolesArg.optional().describe('变量角色映射，例如 {"dependent":["perf"],"group":["gender"]}'),
+      options: optionsArg.optional().describe("覆盖默认 JASP 选项（高级用法）"),
     },
   },
   async ({ session_id, utterance, analysis, variables, options }) => {
@@ -566,7 +564,7 @@ server.registerTool(
     inputSchema: {
       session_id: z.string().describe("会话 ID"),
       plan_id: z.string().describe("计划 ID"),
-      allow_incomplete: z.boolean().optional().describe("计划仍有问题时是否强制确认"),
+      allow_incomplete: booleanArg("计划仍有问题时是否强制确认"),
     },
   },
   async ({ session_id, plan_id, allow_incomplete }) => {
@@ -625,10 +623,10 @@ server.registerTool(
           "regression",
         ])
         .optional(),
-      variables: z.record(z.array(z.string())).optional().describe("要覆盖的角色映射"),
-      options: z.record(z.any()).optional().describe("要覆盖的 JASP 选项"),
+      variables: variableRolesArg.optional().describe("要覆盖的角色映射"),
+      options: optionsArg.optional().describe("要覆盖的 JASP 选项"),
       utterance: z.string().optional().describe("更新用户原话，用于重新识别相关类型等"),
-      confirm: z.boolean().optional().describe("修改后是否直接确认"),
+      confirm: booleanArg("修改后是否直接确认"),
     },
   },
   async ({ session_id, plan_id, analysis, variables, options, utterance, confirm }) => {
@@ -684,7 +682,7 @@ server.registerTool(
       plan_id: z.string().describe("计划 ID"),
       seed: z.number().int().optional().describe("随机种子，默认 1"),
       timeout_ms: z.number().int().optional().describe("超时毫秒，默认 300000"),
-      force: z.boolean().optional().describe("计划未确认时是否强制运行"),
+      force: booleanArg("计划未确认时是否强制运行"),
     },
   },
   async ({ session_id, plan_id, seed, timeout_ms, force }) => {
@@ -1064,7 +1062,7 @@ server.registerTool(
       template_path: z.string().describe("已有 .jasp 模板路径"),
       output_dir: z.string().optional().describe("结果输出目录"),
       data_dir: z.string().optional().describe("兼容参数：JASP 0.99.x 的 CLI 尚不支持替换数据目录"),
-      hide: z.boolean().optional().describe("是否传 --hide（0.99.10 上可能导致崩溃，默认 false）"),
+      hide: booleanArg("是否传 --hide（0.99.10 上可能导致崩溃，默认 false）"),
       timeout_ms: z.number().int().optional().describe("超时毫秒，默认 600000"),
     },
   },

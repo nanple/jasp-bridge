@@ -84,3 +84,66 @@ test("MCP stdio: 初始化并列出工具", async () => {
     child.kill();
   }
 });
+
+test("MCP stdio: 接纳数组对象化与 true/false 字符串参数", async () => {
+  const { child, responses, send } = startServer();
+  try {
+    send({
+      jsonrpc: "2.0",
+      id: 1,
+      method: "initialize",
+      params: {
+        protocolVersion: "2025-06-18",
+        capabilities: {},
+        clientInfo: { name: "jasp-bridge-test", version: "0.0.0" },
+      },
+    });
+    await waitFor(responses, 1);
+    send({ jsonrpc: "2.0", method: "notifications/initialized" });
+
+    send({
+      jsonrpc: "2.0",
+      id: 2,
+      method: "tools/call",
+      params: {
+        name: "jasp_plan_analysis",
+        arguments: {
+          session_id: "s_missing",
+          utterance: "做描述统计",
+          analysis: "descriptives",
+          variables: { variables: { "0": "item_a", "1": "item_b" } },
+          options: { shapiroWilkTest: "false", matrixPlot: "false" },
+        },
+      },
+    });
+    const planCall = await waitFor(responses, 2);
+    const planText = JSON.stringify(planCall);
+    assert.equal(planCall.error, undefined, planText);
+    assert.ok(planCall.result, planText);
+    const planBody = planCall.result.content?.[0]?.text || "";
+    assert.doesNotMatch(planBody, /Input validation error|Invalid arguments|Expected array/i);
+    assert.match(planBody, /找不到会话|不存在|未找到|session/i);
+
+    send({
+      jsonrpc: "2.0",
+      id: 3,
+      method: "tools/call",
+      params: {
+        name: "jasp_confirm_plan",
+        arguments: {
+          session_id: "s_missing",
+          plan_id: "p_missing",
+          allow_incomplete: "false",
+        },
+      },
+    });
+    const confirmCall = await waitFor(responses, 3);
+    const confirmText = JSON.stringify(confirmCall);
+    assert.equal(confirmCall.error, undefined, confirmText);
+    const confirmBody = confirmCall.result.content?.[0]?.text || "";
+    assert.doesNotMatch(confirmBody, /Input validation error|Invalid arguments|Expected boolean/i);
+    assert.match(confirmBody, /找不到会话|不存在|未找到|session/i);
+  } finally {
+    child.kill();
+  }
+});
