@@ -1,6 +1,6 @@
 # JASP-Bridge 实用指南
 
-版本：0.2.0（2026-11-25）  
+版本：0.3.0（2026-11-26）  
 适用：WorkBuddy + 本机 JASP（Windows 10/11 64 位）
 
 > 图文版：浏览器打开 `docs/visual-guide.html`，或直接看 `docs/visual-guide.pdf`。
@@ -13,7 +13,7 @@
 
 JASP-Bridge 是一个 WorkBuddy 的 MCP 插件。它把自然语言请求整理成统计计划，再调用**本机 JASP 的 R 引擎**执行分析，最后把结果表返回对话。
 
-它不是把 JASP 图形界面嵌进 WorkBuddy，也不是用 Python 重新实现统计。正常分析时不会弹出 JASP 窗口；只有“用已有 `.jasp` 模板导出报告”时才会调用 JASP 桌面程序。
+它不是把 JASP 图形界面嵌进 WorkBuddy，也不是用 Python 重新实现统计。正常分析时不会弹出 JASP 窗口；只有“用已有 `.jasp` 模板导出报告”时才会调用 JASP 桌面程序。插件是分析的支配方：先读数据、给出可确认的方案，你确认后再由 JASP 出表、图和 `.jasp`。WorkBuddy 只负责转发和展示，不要自行计算或改用 Python 做旁路分析。
 
 一句话：
 
@@ -54,7 +54,7 @@ JASP-Bridge 是一个 WorkBuddy 的 MCP 插件。它把自然语言请求整理�
 
 ### 4.1 超级简单版：把安装包直接发给 WorkBuddy
 
-如果你的 WorkBuddy 版本允许执行本地命令或文件操作，可以把 `jasp-bridge-0.2.0-portable.zip` 拖进对话框，然后发：
+如果你的 WorkBuddy 版本允许执行本地命令或文件操作，可以把 `jasp-bridge-0.3.0-portable.zip` 拖进对话框，然后发：
 
 ```text
 这是我下载的 JASP-Bridge 安装包。请帮我：
@@ -133,10 +133,10 @@ powershell -ExecutionPolicy Bypass -File .\install.ps1
 
 ### 4.6 便携包里有什么、没有什么
 
-官方 `jasp-bridge-0.2.0-portable.zip` 约 39 MB，内含插件代码、`node_modules`、文档、示例和 Windows `node.exe`。**不包含**约 1.7 GB 的 JASP 运行时（安装时由 `install.ps1` 从本机 JASP 复制）。
+官方 `jasp-bridge-0.3.0-portable.zip` 约 39 MB，内含插件代码、`node_modules`、文档、示例和 Windows `node.exe`。**不包含**约 1.7 GB 的 JASP 运行时（安装时由 `install.ps1` 从本机 JASP 复制）。
 
 - 仓库：https://github.com/nanple/jasp-bridge
-- 便携包：https://github.com/nanple/jasp-bridge/releases/download/v0.2.0/jasp-bridge-0.2.0-portable.zip
+- 便携包：https://github.com/nanple/jasp-bridge/releases/download/v0.3.0/jasp-bridge-0.3.0-portable.zip
 - 更新清单：https://github.com/nanple/jasp-bridge/releases/latest/download/latest.json
 
 ---
@@ -206,10 +206,10 @@ gender 的 1 表示男，2 表示女
 | 重复测量 ANOVA | Mauchly 球形检验、GG 校正、被试内/被试间效应、偏 eta²、事后比较 | 宽格式；单一被试内因子 + 可选组间因子；默认 Holm |
 | Process 中介/调节 | a/b/c′ 路径、间接效应 + bootstrap CI、总效应、R²、简单斜率、调节中介指数、路径图 | Model 1 / 4 / 6 / 7 / 8 / 14 / 15；对话里提“缺失/FIML”可用 FIML |
 | 贝叶斯 Process | 后验估计、可信区间、R̂、有效样本量 | 同一套 Hayes 模型；说“贝叶斯中介”或“贝叶斯调节”。MCMC 较慢 |
-| 探索性因子分析 | KMO、Bartlett、特征值、碎石图、载荷、因子相关、拟合优度 | **至少指定 3 个观测变量**；可指定提取方法与旋转 |
+| 探索性因子分析 | KMO、Bartlett、特征值、碎石图、载荷、因子相关、拟合优度 | 至少 3 个观测变量；未指定题项时先给建议，确认后再跑 |
 | 主成分分析 | 特征值、碎石图、成分载荷、累计解释方差 | 至少 3 个变量；可指定保留成分数 |
-| 验证性因子分析 | χ²、CFI/TLI/RMSEA/SRMR、载荷、组合信度、路径图 | 必须给出因子结构（`options.factors`） |
-| 结构方程模型 | 拟合指标、路径系数、R²、路径图 | 必须给出 lavaan 语法（`options.models`） |
+| 验证性因子分析 | χ²、CFI/TLI/RMSEA/SRMR、载荷、组合信度、路径图 | 未给因子结构时按题项前缀提出建议，确认后再跑；也可显式传 `options.factors` |
+| 结构方程模型 | 拟合指标、路径系数、R²、路径图 | 未给语法时可先给建议测量模型，确认后再跑；也可显式传 `options.models` |
 | PLS-SEM | 路径系数 + bootstrap CI、Composite Reliability、AVE、HTMT | 必须给出 `->` 复合测量语法 |
 | MIMIC 模型 | 拟合指标、路径系数 | 至少 3 个指标，预测变量须为连续或二分 |
 | 潜变量增长曲线 | 截距/斜率（可选二次/三次）及拟合指标 | 至少 3 个连续重复测量变量 |
@@ -230,7 +230,7 @@ gender 的 1 表示男，2 表示女
 - 不能直接读 `.xlsx`、`.sav`（请先另存为 CSV）；
 - 不能自动计算量表总分；反向题自动识别不保证 100%；
 - 不能做多因素被试内设计（如 2×3 全被试内）；重复测量目前是单一被试内因子，可叠加 1–2 个组间因子；
-- 因子分析 / SEM 只支持“选项驱动”：**EFA/PCA 至少要指定 3 个观测变量**（只说“做 EFA”时插件会追问题项，不会自动拿全部列来算）；**CFA 必须给因子结构**，**SEM / PLS-SEM 必须给语法**，不会从一句话里自动编模型；
+- 因子分析 / SEM：EFA/PCA 至少需要 3 个观测变量。只说“做 EFA / CFA / SEM”且未指定题项或因子时，插件会根据列名、前缀和类型给出建议方案，并标明这是建议、须确认后才执行；你也可以继续显式提供 `options.factors` 或 `options.models`。插件不会把建议当成已确认的事实，也不会自动开跑；
 - 简单效应支持一个调节因子，也可以加第二个调节因子（三因素）；数据需要平衡，有空格子时 JASP 无法估计；
 - Process 支持 Model 1 / 4 / 6 / 7 / 8 / 14 / 15（含有调节的中介）。双调节、并行多中介等尚未封装。对话中提到缺失或 FIML 时可用 FIML，否则默认 listwise；
 - 贝叶斯 Process、贝叶斯线性/广义混合模型已经封装，但 MCMC 默认 3 条链、500 次 burn-in、1000 次抽样，可能需要几分钟；自定义 Stan 模型仍不能做；
@@ -238,7 +238,7 @@ gender 的 1 表示男，2 表示女
 - 可以用 `jasp_export(format=jasp)` 生成真正的 `.jasp` 文件（有成功运行时会写入结果）。无对应运行结果时，仍只写入数据与选项；
 - 不能自动修复不满足的前提条件，只会提示或追问；
 - 配对 t、ANCOVA、ANOVA、线性回归目前标 beta，关键论文建议与 JASP 图形界面对照；
-- 描述统计时若把题项标成有序（ordinal）变量，JASP 不会输出均值和标准差，需要改成连续（scale）变量再跑。
+- 描述统计时若把题项标成有序（ordinal）变量，JASP 不会输出均值和标准差。0.3.0 起，带小数的量表均分会推断为连续（scale）；若仍被判错，用 `types` 覆盖后再跑。
 
 ---
 
@@ -401,15 +401,15 @@ gender 的 1 表示男，2 表示女
 
 ### 场景 12：因子分析、结构方程与混合模型
 
-因子结构探索：
+因子结构探索。可以直接说“做探索性因子分析”；如果题项有 `sat1` / `anx1` 这样的前缀，插件会先给出建议题项和因子数，标明为建议，等你确认后再跑。也可以自己指定：
 
 ```text
 对 x1 到 x8 做探索性因子分析，提取 2 个因子
 ```
 
-你会得到：KMO、Bartlett 球形检验、特征值与碎石图、因子载荷矩阵、因子间相关。
+确认并运行后，你会得到：KMO、Bartlett 球形检验、特征值与碎石图、因子载荷矩阵、因子间相关。
 
-验证性因子分析（高级用法，需要给因子结构）：
+验证性因子分析：未给因子结构时，插件也会按题项前缀提出建议。若要自己指定，可在 `options.factors` 里写：
 
 ```json
 {
@@ -420,7 +420,7 @@ gender 的 1 表示男，2 表示女
 }
 ```
 
-结构方程模型（高级用法，需要给 lavaan 语法）：
+结构方程模型：未给语法时，插件可先给出建议测量模型。若要自己指定 lavaan 语法，可在 `options.models` 里写：
 
 ```json
 {
@@ -563,8 +563,8 @@ $HOME\.workbuddy\mcp.json
 
 ## 15. 版本与路线图
 
-- **当前（0.2.0）**：22 类可运行分析（含贝叶斯 Process、贝叶斯线性/广义混合模型、MIMIC、潜变量增长曲线）、重复测量 ANOVA、ANOVA 事后比较 / 简单效应 / 对比、Process Model 1/4/6/7/8/14/15、EFA/PCA/CFA、SEM/PLS-SEM、计划确认、常驻 worker、离线运行时、便携安装、模板报告、图片回传、结果 CSV、JASP 复现包与真正的 `.jasp` 结果写入。其中回归、配对 t、ANCOVA、ANOVA 仍标 beta。
-- **下一步**：Excel（`.xlsx`）直接读取；把缺失值策略（FIML / 多重插补）扩展到更多分析；更多 Process 模型（如并行多中介）。
+- **当前（0.3.0）**：在 0.2.0 的 22 类分析之上，修正了量表均分被误判为有序的问题；未指定题项或因子时，插件会给出可确认的建议方案。表、图和 `.jasp` 由 JASP 引擎产生，宿主只负责展示。其中回归、配对 t、ANCOVA、ANOVA 仍标 beta。
+- **下一步（3.0 仍未做部分）**：测量等值、元分析、功效分析、更接近 APA 的表格、图中使用可读变量名、更稳定地打开 `.jasp`；以及 Excel（`.xlsx`）直接读取、把缺失值策略（FIML / 多重插补）扩展到更多分析。
 
 ---
 

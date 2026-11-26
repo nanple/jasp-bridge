@@ -7,6 +7,7 @@ import {
   listRecipes,
   resolveProcessModel,
 } from "./recipes.js";
+import { suggestStructure, suggestionWarning } from "./suggest.js";
 
 function toArray(value) {
   if (value === null || value === undefined || value === "") return [];
@@ -408,10 +409,24 @@ export function buildPlan({ session, utterance = "", analysis, variables = {}, o
     }
   }
 
+  const suggestion = suggestStructure({
+    session,
+    recipe,
+    variables: merged,
+    options,
+    utterance,
+  });
+  if (suggestion.applied) {
+    for (const [role, names] of Object.entries(suggestion.variables || {})) {
+      if (!merged[role] || merged[role].length === 0) merged[role] = names;
+    }
+  }
+
   const validation = validateVariables(session, recipe, merged, utterance);
   const planOptions = attachTypeOptions(
     {
       ...recipe.buildOptions(validation.variables, { utterance, session }),
+      ...(suggestion.applied ? suggestion.options : {}),
       ...options,
     },
     validation.variables,
@@ -456,12 +471,24 @@ export function buildPlan({ session, utterance = "", analysis, variables = {}, o
     questions,
     warnings: [
       ...validation.warnings,
+      ...(suggestion.applied ? suggestionWarning(suggestion) : []),
       ...(recipe.beta
         ? [`「${recipe.label}」在 P0 标记为 beta：若 JASP 报选项错误，请用 jasp_export 导出模板后在 JASP 中固定一次。`]
         : []),
     ],
     apa_hint: recipe.apaHint,
     utterance,
+    suggestions: suggestion.applied
+      ? {
+          pending: true,
+          label: "建议（尚未确认）",
+          items: suggestion.items,
+          factors: suggestion.factors,
+          models: suggestion.models,
+          factorCount: suggestion.factorCount,
+          notes: suggestion.notes,
+        }
+      : undefined,
   };
 
   return plan;
@@ -501,6 +528,28 @@ export function planMarkdown(plan) {
 
   for (const [role, names] of Object.entries(plan.variables)) {
     lines.push(`- ${role}: ${names.join("、")}`);
+  }
+
+  if (plan.suggestions?.pending) {
+    lines.push("", "**建议（尚未确认，不是已确认的事实）**");
+    if (plan.suggestions.items?.length) {
+      lines.push(`- 建议题项：${plan.suggestions.items.join("、")}`);
+    }
+    if (plan.suggestions.factors?.length) {
+      lines.push(
+        `- 建议因子结构：${plan.suggestions.factors
+          .map((factor) => `${factor.name}（${(factor.indicators || []).join("、")}）`)
+          .join("；")}`
+      );
+    }
+    if (plan.suggestions.models) {
+      lines.push("- 建议模型语法：", "", "```", plan.suggestions.models, "```");
+    }
+    if (plan.suggestions.factorCount) {
+      lines.push(`- 建议因子/成分数：${plan.suggestions.factorCount}`);
+    }
+    for (const note of plan.suggestions.notes || []) lines.push(`- ${note}`);
+    lines.push("- 请核对后调用 `jasp_confirm_plan`，或用 `jasp_update_plan` 修改。确认前不会执行。");
   }
 
   if (plan.questions.length > 0) {

@@ -475,7 +475,7 @@ server.registerTool(
         header,
         body,
         "",
-        "`*` 表示必填角色。当前 22 类均已可用：描述统计、信度（α 与 ω）、相关、独立与配对 t 检验、方差分析、协方差分析、重复测量方差分析、回归、Process 与贝叶斯 Process、线性/广义线性混合模型及贝叶斯混合模型、EFA/PCA/CFA、SEM、PLS-SEM、MIMIC、潜变量增长曲线；实际限制是 EFA/PCA 至少需要 3 个观测变量，CFA 需提供 options.factors，SEM/PLS-SEM 需提供 options.models 语法，测量等值、元分析与功效分析尚未封装。",
+        "`*` 表示必填角色。当前 22 类均已可用：描述统计、信度（α 与 ω）、相关、独立与配对 t 检验、方差分析、协方差分析、重复测量方差分析、回归、Process 与贝叶斯 Process、线性/广义线性混合模型及贝叶斯混合模型、EFA/PCA/CFA、SEM、PLS-SEM、MIMIC、潜变量增长曲线。EFA/PCA 至少需要 3 个观测变量；若用户未指定题项或因子结构，`jasp_plan_analysis` 会根据列名、前缀和类型给出建议方案（明确标为建议，须经 `jasp_confirm_plan` 确认后才执行，也可用 `jasp_update_plan` 修改）。CFA 也可先给建议因子结构，SEM/PLS-SEM 可先给建议测量模型语法；用户仍可显式传入 options.factors / options.models。测量等值、元分析与功效分析尚未封装。",
       ].join("\n")
     );
   }
@@ -489,7 +489,7 @@ server.registerTool(
   {
     title: "生成分析计划",
     description:
-      "把自然语言研究问题转成结构化 JASP 分析计划（方法、变量映射、选项、前提检查）。先返回计划让用户确认，不直接执行。",
+      "由插件根据已加载数据生成可确认的分析计划（建议题项、因子结构、方法与关键选项）。这是分析方案的权威来源：宿主只需把计划展示给用户，不要自行计算、下结论或改用 Python 做旁路分析。用户未指定题项或因子时，插件会检查变量名、前缀和类型并给出建议；建议必须标明为建议，不是已确认的事实。状态为 proposed 时请展示计划并等待用户确认，不要自动执行。确认请用 jasp_confirm_plan，修改请用 jasp_update_plan。本工具不执行分析。",
     inputSchema: {
       session_id: z.string().describe("会话 ID"),
       utterance: z.string().describe("用户原话，例如「比较男女在抑郁得分上的差异」"),
@@ -561,7 +561,8 @@ server.registerTool(
   "jasp_confirm_plan",
   {
     title: "确认分析计划",
-    description: "锁定分析计划，允许后续执行。若计划还有未解决的问题，需要 allow_incomplete=true。",
+    description:
+      "在用户核对插件提出的计划（含建议题项与因子结构）之后锁定该计划，随后才能调用 jasp_run。未解决的问题需要先 jasp_update_plan 补全，或在用户明确同意时使用 allow_incomplete=true。不要在用户确认前执行。",
     inputSchema: {
       session_id: z.string().describe("会话 ID"),
       plan_id: z.string().describe("计划 ID"),
@@ -594,7 +595,7 @@ server.registerTool(
   {
     title: "修改分析计划",
     description:
-      "对已有计划做增量修改（变量、方法、选项），不需要重新描述整个研究问题。可同时 confirm=true 直接确认。",
+      "对插件已提出的计划做增量修改（题项、因子结构、方法、选项）。适用于用户不接受某条建议、或要补全模型路径的情况。修改后默认仍为待确认；加上 confirm=true 且没有未解问题时可直接确认。不要跳过确认去执行，也不要在宿主侧自行改算。",
     inputSchema: {
       session_id: z.string().describe("会话 ID"),
       plan_id: z.string().describe("计划 ID"),
@@ -677,7 +678,7 @@ server.registerTool(
   {
     title: "执行分析",
     description:
-      "按已确认的计划调用 JASP/R 执行分析。返回 run_id，用 jasp_run_status 轮询，用 jasp_get_results 取结果。若本机无 R/jaspTools，会进入 dry-run 并生成可复现请求。",
+      "按已确认的计划调用本机 JASP 引擎执行分析，这是得出统计数字、表格、图和 .jasp 的唯一途径。宿主应展示本工具链返回的结果，不要自行计算或编造数值，也不要改用 Python 做旁路分析。返回 run_id，用 jasp_run_status 轮询，用 jasp_get_results 取结果。计划未确认时不要调用（除非用户明确要求 force=true）。若本机无 R/jaspTools，会进入 dry-run 并生成可复现请求，不会产生统计数字。",
     inputSchema: {
       session_id: z.string().describe("会话 ID"),
       plan_id: z.string().describe("计划 ID"),
@@ -787,7 +788,7 @@ server.registerTool(
   {
     title: "获取分析结果",
     description:
-      "读取已完成的 JASP 结果，返回 Markdown 表格、图片与工件路径；format=json 时返回原始 result.json 内容。",
+      "读取已完成的 JASP 结果，返回由 JASP 引擎生成的 Markdown 表格、图片、工件路径，并可配合 jasp_export 得到 .jasp。宿主应原样展示这些结果，不要改写数字、不要自行计算或下结论，也不要改用 Python 再算一遍。format=json 时返回原始 result.json 内容。",
     inputSchema: {
       session_id: z.string().describe("会话 ID"),
       run_id: z.string().describe("运行 ID"),

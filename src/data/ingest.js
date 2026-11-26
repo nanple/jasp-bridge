@@ -16,14 +16,30 @@ function toNumber(value) {
   return Number.isFinite(n) ? n : NaN;
 }
 
-function looksLikeId(name) {
-  return /^(id|no|index|编号|序号|被试编号|subject_?id|participant_?id)$/i.test(name.trim());
+export function looksLikeId(name) {
+  return /^(id|no|index|编号|序号|被试编号|subject_?id|participant_?id)$/i.test(String(name).trim());
 }
 
-function looksCategorical(name) {
+export function looksCategorical(name) {
   return /(gender|sex|性别|group|组别|分组|condition|实验条件|edu|education|学历|年级|class|类别|category|type|类型|level|水平)/i.test(
     name
   );
+}
+
+function isIntegerToken(value) {
+  const n = toNumber(value);
+  if (!Number.isFinite(n) || !Number.isInteger(n)) return false;
+  const raw = String(value).trim().replace(/,/g, "");
+  // "4.0" / "3.50" keep a decimal point in the source, so treat as continuous.
+  return !/[.]/.test(raw);
+}
+
+function isLikertLikeIntegers(nums) {
+  if (nums.length === 0) return false;
+  const min = Math.min(...nums);
+  const max = Math.max(...nums);
+  // Typical item scales such as 1–5, 1–7, or 0–10. A sample may only use part of the range.
+  return min >= 0 && max <= 10 && max - min <= 10;
 }
 
 export function inferType(name, values, override) {
@@ -34,13 +50,23 @@ export function inferType(name, values, override) {
   const present = values.filter((v) => !isMissing(v));
   if (present.length === 0) return "nominal";
 
-  const numeric = present.filter((v) => Number.isFinite(toNumber(v)));
-  const numericRatio = numeric.length / present.length;
-  const unique = new Set(present.map((v) => String(v).trim())).size;
+  const nums = present.map(toNumber).filter(Number.isFinite);
+  const numericRatio = nums.length / present.length;
 
   if (numericRatio >= 0.9) {
-    if (unique <= 2) return "nominal";
-    if (unique <= 10) return "ordinal";
+    const allInteger = present.every(isIntegerToken);
+    const uniqueNumeric = new Set(nums.map((n) => n)).size;
+    // Unique count alone is not enough: decimal means/totals stay scale even when few distinct values.
+    if (!allInteger) return "scale";
+    if (uniqueNumeric <= 2) {
+      const min = Math.min(...nums);
+      const max = Math.max(...nums);
+      // Typical dummy codes such as 0/1 or 1/2. A 1–5 item that only used 4 and 5 stays ordinal.
+      if ((min === 0 || min === 1) && max - min <= 1) return "nominal";
+      if (isLikertLikeIntegers(nums)) return "ordinal";
+      return "scale";
+    }
+    if (isLikertLikeIntegers(nums)) return "ordinal";
     return "scale";
   }
   return "nominal";

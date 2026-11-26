@@ -1,6 +1,6 @@
 {
   "name": "jasp-bridge",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "description": "WorkBuddy MCP plugin that turns natural-language requests into JASP analyses",
   "type": "module",
   "bin": {
@@ -12,7 +12,7 @@
     "status": "node src/cli/status.js",
     "setup:runtime": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/setup_runtime.ps1",
     "build:release": "powershell -NoProfile -ExecutionPolicy Bypass -File build-release.ps1",
-    "smoke": "node --test test/smoke.test.js test/protocol.test.js test/e2e.test.js test/update.test.js test/csv.test.js test/jasp.test.js test/progress.test.js",
+    "smoke": "node --test test/smoke.test.js test/protocol.test.js test/e2e.test.js test/update.test.js test/csv.test.js test/jasp.test.js test/progress.test.js test/ingest.test.js test/planner-suggest.test.js",
     "progress": "node scripts/progress_server.mjs"
   },
   "engines": {

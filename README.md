@@ -2,7 +2,7 @@
 
 以 **WorkBuddy 为对话入口**、**JASP 为统计引擎**的 MCP 插件。用户在 WorkBuddy 里用自然语言提需求，插件把需求整理成可确认的分析计划，再调用本机 JASP/R 执行，最后把结果以 Markdown 表格 + APA 报告提示返回对话。
 
-> 当前状态（0.2.0，2026-11-25）：**22 类**可运行分析（频率派 17 类 + 贝叶斯 Process、贝叶斯线性/广义混合模型、MIMIC、潜变量增长曲线）、15 个 MCP 工具。其中 `RegressionLinear`、配对 t、ANCOVA、ANOVA 仍标 beta。本机没有 R/jaspTools 时会进入 **dry-run**，只生成可复现工件，不产生统计数字。
+> 当前状态（0.3.0，2026-11-26）：**22 类**可运行分析，15 个 MCP 工具。类型推断不再仅凭唯一值把均分判成有序变量；用户未指定题项或因子时，插件会给出可确认的建议方案，确认前不执行。统计数字、表、图和 `.jasp` 只由本机 JASP 引擎产生，宿主只负责转发和展示。其中 `RegressionLinear`、配对 t、ANCOVA、ANOVA 仍标 beta。本机没有 R/jaspTools 时会进入 **dry-run**，只生成可复现工件，不产生统计数字。
 >
 > 源码与 Release：https://github.com/nanple/jasp-bridge
 > 随包实用指南见 [GUIDE.md](GUIDE.md)，图文版见 `docs/visual-guide.pdf`，示例数据在 `examples/demo.csv`、`examples/factor-demo.csv`、`examples/mixed-demo.csv`。
@@ -81,7 +81,7 @@ JASP 免费开源，结果随选项即时更新，假设检验与效应量同时
 
 ### 3.1 一键安装（推荐，方案 B）
 
-从 GitHub Release 下载官方便携包 [jasp-bridge-0.2.0-portable.zip](https://github.com/nanple/jasp-bridge/releases/download/v0.2.0/jasp-bridge-0.2.0-portable.zip)，解压后在该目录运行：
+从 GitHub Release 下载官方便携包 [jasp-bridge-0.3.0-portable.zip](https://github.com/nanple/jasp-bridge/releases/download/v0.3.0/jasp-bridge-0.3.0-portable.zip)，解压后在该目录运行：
 
 ```powershell
 powershell -ExecutionPolicy Bypass -File .\install.ps1
@@ -191,7 +191,7 @@ JASPDesktop.exe <template.jasp> --report <输出目录> --logToFile --timeOut=5
 | `jasp_ingest_data` | 从对话粘贴内容建数据集 |
 | `jasp_describe_data` | 变量字典、缺失、水平、描述统计 |
 | `jasp_list_methods` | 列出已封装方法与变量角色 |
-| `jasp_plan_analysis` | 自然语言 → 分析计划（不执行） |
+| `jasp_plan_analysis` | 自然语言 → 可确认的分析计划（可含建议题项与因子结构，不执行） |
 | `jasp_confirm_plan` | 确认计划 |
 | `jasp_update_plan` | 增量修改变量/方法/选项 |
 | `jasp_run` | 提交执行，返回 `run_id` |
@@ -216,8 +216,8 @@ JASPDesktop.exe <template.jasp> --report <输出目录> --logToFile --timeOut=5
 | `process` | `ClassicProcess` | 实测通过（Model 1 / 4 / 6 / 7 / 8 / 14 / 15；可 FIML） |
 | `efa` | `exploratoryFactorAnalysis` | 实测通过（至少 3 个观测变量；KMO/Bartlett、载荷、碎石图） |
 | `pca` | `principalComponentAnalysis` | 实测通过（至少 3 个变量；特征值、碎石图、成分载荷） |
-| `cfa` | `confirmatoryFactorAnalysis` | 实测通过（需在 `options.factors` 给因子结构） |
-| `sem` | `SEM` | 实测通过（需在 `options.models` 给 lavaan 语法） |
+| `cfa` | `confirmatoryFactorAnalysis` | 实测通过（未给因子结构时先给建议，确认后再跑） |
+| `sem` | `SEM` | 实测通过（未给语法时可先给建议测量模型，确认后再跑） |
 | `plssem` | `PLSSEM` | 实测通过（需 PLS 复合测量语法 + bootstrap CI） |
 | `mimic` | `MIMIC` | 实测通过（指标 ≥ 3，预测变量须为连续或二分） |
 | `latent_growth` | `LatentGrowthCurve` | 实测通过（至少 3 个连续重复测量变量） |
@@ -297,13 +297,13 @@ MCP 侧也提供同名工具 `jasp_progress`（`format=markdown|json`），两�
 ## 8. 已知限制
 
 - `.sav` 与 Excel 未直接支持：先另存为 CSV（`.sav` 可用 JASP 导出）。
-- 小样本下变量类型推断可能把连续变量判为 ordinal；用 `types` 参数覆盖。
+- 类型推断不再仅凭唯一值数量：带小数的均分/总分视为 `scale`，1–5 / 1–7 题项仍为 `ordinal`，年龄等范围明显不是量表题的整数列为 `scale`。若仍需纠正，用 `types` 参数覆盖。
 - P0 只解析结果表，不解析图；图可通过 `jasp_run_template` 导出 HTML/PDF。
 - 重复测量 ANOVA 目前只封装**单一被试内因子**（多个水平用多列表示），可叠加 1–2 个组间因子；多因素被试内设计（如 2×3）需导出请求后手工扩展因子定义。
 - `rm_anova` 暂不支持自定义 contrast 与边际均值；需要时请在 JASP GUI 中补做。
 - Process 支持 Model 1 / 4 / 6 / 7 / 8 / 14 / 15；双调节、并行多中介尚未封装。对话中提到缺失或 FIML 时可用 FIML，否则默认 listwise。中介默认 1000 次 bootstrap，单次约 30–90 秒。
 - 简单效应支持一个调节因子，也可以加第二个调节因子（三因素）；数据需平衡，有空格子时 JASP 无法估计。对比支持预设类型（Helmert / 多项式 / 重复 / 差异 / 偏差 / 简单）与 `options.contrasts` + `options.customContrasts` 传入的任意系数矩阵。
-- EFA/PCA 至少需要 3 个观测变量（只说“做 EFA”时会追问题项）。CFA 需要在 `options.factors` 给出因子结构，SEM / PLS-SEM 需要在 `options.models` 给出语法；都只支持“选项驱动”，不做自然语言自动建模。
+- EFA/PCA 至少需要 3 个观测变量。只说“做 EFA / CFA / SEM”且未指定题项或因子时，插件会根据列名、前缀和类型给出建议方案（明确标为建议，须确认后才执行）；也可继续显式传入 `options.factors` / `options.models`。这不是自动定稿，也不会在确认前开跑。
 - 混合模型支持 LMM、GLMM（二项 / Poisson / 高斯等）以及贝叶斯版本（MixedModelsBLMM / MixedModelsBGLMM）和贝叶斯 Process。分组因子必须是每组多观测的 ID 列。贝叶斯分析默认 MCMC 为 3 条链、500 次 burn-in、1000 次抽样，可能需要几分钟。
 - `anova` / `rm_anova` / `regression` 的复杂选项（`modelTerms`、`postHoc`）在不同 JASP 版本间结构可能变化；运行时若报"选项不存在"，按提示在 JASP GUI 核对后固定模板。
 - `jaspTools` 是开发/测试向工具链，内部函数（如 `resultsTables`）可能随版本变化；脚本已做 fallback walker。
@@ -329,8 +329,8 @@ MCP 侧也提供同名工具 `jasp_progress`（`format=markdown|json`），两�
 
 ## 10. 路线图
 
-- **当前（0.2.0）**：MCP 骨架、数据字典、计划状态机、22 类分析（含贝叶斯 Process、贝叶斯线性/广义混合模型、MIMIC、潜变量增长曲线）、重复测量 ANOVA、ANOVA 事后比较 / 简单效应 / 对比、Process Model 1/4/6/7/8/14/15、EFA/PCA/CFA、SEM/PLS-SEM、线性与广义混合模型、dry-run、工件导出、图片回传、CSV 导出、JASP 复现包与真正的 `.jasp` 结果写入。
-- **下一步**：Excel（`.xlsx`）直接读取；把缺失值策略扩展到更多分析；分析配方（信度→合成→回归的自动前置链）、项目级记忆、团队共享模板。
+- **当前（0.3.0）**：在 0.2.0 的 22 类分析与 `.jasp` 写盘之上，修正了量表均分等连续分数被误判为有序的问题；EFA/CFA/SEM 等在未指定题项或因子时会给出可确认的建议方案。宿主应展示插件返回的表、图和 `.jasp`，不要自行计算。
+- **下一步（3.0 仍未做部分）**：测量等值、元分析、功效分析、更接近 APA 的表格、图中使用可读变量名（而非 `jaspColumnN`）、更稳定地打开 `.jasp` 文件；以及 Excel（`.xlsx`）直接读取、更完整的缺失值策略（FIML）。
 
 ---
 
@@ -351,16 +351,16 @@ npm start        # 以 stdio 启动 MCP 服务（通常由 WorkBuddy 拉起）
 **A. 便携 zip（推荐给普通用户，方案 B）**
 
 ```powershell
-.\build-release.ps1 -Version 0.2.0 -IncludeNode
+.\build-release.ps1 -Version 0.3.0 -IncludeNode
 ```
 
 生成：
 
 ```text
-dist/jasp-bridge-0.2.0-portable.zip
+dist/jasp-bridge-0.3.0-portable.zip
 ```
 
-官方 0.2.0 便携包约 39 MB，内含 `node_modules`、`src`、`scripts`、文档、示例和 Windows `node.exe`，**不**包含约 1.7 GB 的 JASP 运行时。运行时在安装时从用户本机 JASP 复制。不加 `-IncludeNode` 时体积约 5.5 MB，安装后需使用系统或 WorkBuddy 已有的 Node。
+官方 0.3.0 便携包约 39 MB，内含 `node_modules`、`src`、`scripts`、文档、示例和 Windows `node.exe`，**不**包含约 1.7 GB 的 JASP 运行时。运行时在安装时从用户本机 JASP 复制。不加 `-IncludeNode` 时体积约 5.5 MB，安装后需使用系统或 WorkBuddy 已有的 Node。
 
 **B. npm 包（给开发者，目前未发布）**
 
@@ -369,7 +369,7 @@ dist/jasp-bridge-0.2.0-portable.zip
 **C. 公开下载地址**
 
 - 仓库：https://github.com/nanple/jasp-bridge
-- 便携包：https://github.com/nanple/jasp-bridge/releases/download/v0.2.0/jasp-bridge-0.2.0-portable.zip
+- 便携包：https://github.com/nanple/jasp-bridge/releases/download/v0.3.0/jasp-bridge-0.3.0-portable.zip
 - 更新清单 `latest.json`：https://github.com/nanple/jasp-bridge/releases/latest/download/latest.json
 
 ### 11.2 国内网络方案
@@ -414,8 +414,8 @@ dist/jasp-bridge-0.2.0-portable.zip
 
 ```json
 {
-  "version": "0.2.0",
-  "url": "https://.../jasp-bridge-0.2.0-portable.zip",
+  "version": "0.3.0",
+  "url": "https://.../jasp-bridge-0.3.0-portable.zip",
   "sha256": "<64 位十六进制>",
   "notes": "更新说明",
   "runtime_required": false,
@@ -450,7 +450,7 @@ dist/jasp-bridge-0.2.0-portable.zip
 
 ```powershell
 powershell -ExecutionPolicy Bypass -File "$HOME\.workbuddy\jasp-bridge\update.ps1" `
-  -PackageDir "$HOME\.workbuddy\jasp-bridge\updates\0.2.0\package" `
+  -PackageDir "$HOME\.workbuddy\jasp-bridge\updates\0.3.0\package" `
   -InstallDir "$HOME\.workbuddy\jasp-bridge"
 ```
 

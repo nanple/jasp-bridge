@@ -1,10 +1,10 @@
 {
   "schema": "jasp-bridge/progress@1",
-  "updated_at": "2026-11-26T00:32:50.000Z",
-  "version": "0.2.0",
-  "phase": "0.2.0 已在 GitHub 公开发布",
-  "status": "released",
-  "summary": "22 类 JASP 分析已接入并经真实引擎验证（含 MixedModelsBGLMM）。用户文档已按 22 类与真实能力修订。0.2.0 已发布到 https://github.com/nanple/jasp-bridge ，Release v0.2.0 提供含 node.exe 的便携 zip 与 latest.json。",
+  "updated_at": "2026-11-26T01:20:00.000Z",
+  "version": "0.3.0",
+  "phase": "0.3.0：类型推断与可确认分析方案",
+  "status": "ready_to_release",
+  "summary": "0.3.0 修正了量表均分等连续分数因唯一值少被判成有序的问题；EFA/CFA/SEM 等在未指定题项或因子时会给出可确认的建议方案。统计数字、表、图和 .jasp 仍只由本机 JASP 引擎产生。22 类分析能力与 0.2.0 相同。测量等值、元分析、功效分析、APA 表格、图中可读变量名、更稳定打开 .jasp 仍属后续 3.0 工作。",
   "completed": [
     "重复测量 ANOVA（球形检验、GG 校正、混合设计、事后比较）",
     "ANOVA 事后比较（Tukey/Holm/Bonferroni/Scheffé/Šidák/FDR）",
@@ -28,9 +28,18 @@
     "潜变量增长曲线 LatentGrowthCurve（截距/线性，可选二次/三次与协变量；时点默认 0,1,2,…）",
     "贝叶斯广义线性混合模型 MixedModelsBGLMM（jaspMixedModels，rstanarm；Bernoulli / 高斯等族已实测）",
     "docs/visual-guide.html 与 visual-guide.pdf 已按 22 类分析重新生成（0.2.0）",
-    "?? GitHub ???? nanple/jasp-bridge v0.2.0?? node.exe ??? zip ? latest.json?"
+    "?? GitHub ???? nanple/jasp-bridge v0.2.0?? node.exe ??? zip ? latest.json?",
+    "类型推断：不再仅凭唯一值把数值列判成 ordinal；均分等带小数的连续分数为 scale，1–5/1–7 题项仍为 ordinal",
+    "可确认分析方案：未指定题项或因子时，根据列名、前缀和类型提出建议，标明为建议，确认前不执行",
+    "宿主提示词与工具说明加强：宿主只转发和展示插件结果，不要自行计算或改用 Python 做旁路分析"
   ],
   "next": [
+    "测量等值",
+    "元分析",
+    "功效分析",
+    "更接近 APA 的表格",
+    "图中使用可读变量名（而非编码后的 jaspColumnN）",
+    "更稳定地打开 .jasp 文件",
     "缺失值策略（FIML / 多重插补）扩展到各分析",
     "Excel（.xlsx）读取支持"
   ],
@@ -70,13 +79,18 @@
       "id": "t_publish",
       "content": "已发布 0.2.0 到 https://github.com/nanple/jasp-bridge/releases/tag/v0.2.0",
       "status": "completed"
+    },
+    {
+      "id": "t_030_type_and_plan",
+      "content": "0.3.0：类型推断修正 + 可确认的题项/因子建议方案（确认前不执行）",
+      "status": "completed"
     }
   ],
   "commands": {
     "smoke": "npm run smoke",
     "status": "npm run status",
     "progress": "npm run progress",
-    "build": ".\\build-release.ps1 -Version 0.2.0 -IncludeNode"
+    "build": ".\\build-release.ps1 -Version 0.3.0 -IncludeNode"
   },
   "paths": {
     "recipes": "src/plan/recipes.js",

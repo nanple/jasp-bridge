@@ -317,8 +317,10 @@ test("planner: CFA 需要因子结构", () => {
     utterance: "对 sat1 到 sat3 做验证性因子分析",
     variables: { variables: ["sat1", "sat2", "sat3"] },
   });
+  // Only one prefix group can be suggested; CFA still requires at least two factors.
   assert.equal(missing.status, "needs_input");
-  assert.ok(missing.questions.some((q) => q.includes("options.factors")));
+  assert.ok(missing.questions.some((q) => q.includes("至少需要 2 个潜变量") || q.includes("options.factors")));
+  assert.equal(missing.options.factors?.[0]?.name, "sat");
 
   const planned = buildPlan({
     session,
@@ -337,9 +339,10 @@ test("planner: CFA 需要因子结构", () => {
 
 test("planner: SEM 需要 lavaan 语法并自动转换", () => {
   const { session } = fixture();
-  const missing = buildPlan({ session, utterance: "用 lavaan 拟合结构方程模型" });
-  assert.equal(missing.status, "needs_input");
-  assert.ok(missing.questions.some((q) => q.includes("options.models")));
+  const suggested = buildPlan({ session, utterance: "用 lavaan 拟合结构方程模型" });
+  assert.equal(suggested.status, "proposed");
+  assert.ok(suggested.suggestions?.pending);
+  assert.match(suggested.options.models[0].syntax.model, /sat =~ sat1 \+ sat2 \+ sat3/);
 
   const planned = buildPlan({
     session,

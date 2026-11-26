@@ -1,4 +1,4 @@
-import { nowIso } from "../config.js";
+import { nowIso, PLUGIN_VERSION } from "../config.js";
 
 export function buildRequest(plan, options = {}) {
   if (!plan?.jasp?.analysis) throw new Error("计划缺少 JASP 分析名。");
@@ -13,7 +13,7 @@ export function buildRequest(plan, options = {}) {
     seed: options.seed ?? 1,
     meta: {
       plugin: "jasp-bridge",
-      plugin_version: "0.2.0",
+      plugin_version: PLUGIN_VERSION,
       plan_id: plan.id,
       plan_revision: plan.revision,
       session_id: plan.session_id,
