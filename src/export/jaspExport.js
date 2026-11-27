@@ -3,6 +3,7 @@ import path from "node:path";
 import { parse } from "csv-parse/sync";
 
 import jaspDefaults from "./jaspDefaults.json" with { type: "json" };
+import { decodeEncodedNames, columnDisplayTitle } from "./decodeNames.js";
 import { buildJaspArchive } from "./jaspWriter.js";
 import { toJaspOptions } from "./jaspOptions.js";
 
@@ -62,7 +63,13 @@ export function collectJaspRunArtifacts(result, runDir) {
     else if (fs.existsSync(resourceRoot)) addDir(resourceRoot);
   }
 
-  return { results: viewer || null, jaspResults: jaspResults || null, resources };
+  const encodingMap = result?.encoding_map;
+  return {
+    results: viewer ? decodeEncodedNames(viewer, encodingMap) : null,
+    jaspResults: jaspResults ? decodeEncodedNames(jaspResults, encodingMap) : null,
+    resources,
+    encodingMap,
+  };
 }
 
 /**
@@ -97,13 +104,23 @@ export function buildJaspFile({
 
   const columns = names.map((name) => {
     const variable = dictionary.get(name);
-    return {
+    const column = {
       name,
       type: variable?.type || "scale",
-      // Labels are derived from the data itself (order of appearance), which
-      // matches how JASP imports a CSV.
-      labels: undefined,
-      description: variable?.label && variable.label !== name ? variable.label : "",
+      label: variable?.label,
+      valueLabels: variable?.valueLabels,
+    };
+    const title = columnDisplayTitle(column);
+    const rawLabel = variable?.label && String(variable.label).trim();
+    const usableLabel = rawLabel && title === rawLabel ? rawLabel : "";
+    return {
+      name,
+      title,
+      type: column.type,
+      valueLabels: variable?.valueLabels,
+      // SPSS / dictionary value labels are preferred; otherwise the writer
+      // derives labels from the values as they appear in the CSV snapshot.
+      description: usableLabel && usableLabel !== name ? usableLabel : "",
     };
   });
 

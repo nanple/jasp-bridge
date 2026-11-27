@@ -107,34 +107,62 @@ jb_collect_tables <- function(results) {
 }
 
 # JASP tables use the encoded column names (jaspColumn1, ...). Decode them back
-# so result.json, Markdown and CSV exports keep the user's variable names.
-jb_decode_value <- function(value, originals, encoded) {
-  if (is.character(value)) {
-    # Titles embed the name ("ANOVA - jaspColumn1"), values usually match exactly.
-    # Longest token first so jaspColumn10 is not partially rewritten as jaspColumn1.
-    for (i in seq_along(encoded)) {
-      value <- gsub(encoded[i], originals[i], value, fixed = TRUE)
-    }
-    return(value)
+# so result.json, Markdown, CSV and the written .jasp keep the user's names.
+# Do not treat jaspColumn2 as a prefix of jaspColumn21 (object ids).
+jb_escape_regex <- function(x) {
+  gsub("([.\\^$*+?()[\\]{}|\\\\])", "\\\\\\1", x)
+}
+
+jb_decode_map <- function(encodingMap) {
+  if (is.null(encodingMap)) return(NULL)
+  if (is.data.frame(encodingMap)) {
+    if (nrow(encodingMap) == 0) return(NULL)
+    order <- order(nchar(as.character(encodingMap$encoded)), decreasing = TRUE)
+    return(list(
+      originals = as.character(encodingMap$original[order]),
+      encoded = as.character(encodingMap$encoded[order])
+    ))
   }
-  if (is.list(value)) {
-    # Header names can also carry the encoded column, e.g. "jaspColumn2.".
-    if (!is.null(names(value))) {
-      names(value) <- jb_decode_value(names(value), originals, encoded)
-    }
-    return(lapply(value, jb_decode_value, originals = originals, encoded = encoded))
+  NULL
+}
+
+jb_decode_string <- function(value, originals, encoded) {
+  if (!is.character(value)) return(value)
+  for (i in seq_along(encoded)) {
+    pattern <- paste0("(?<![A-Za-z0-9])", jb_escape_regex(encoded[i]), "(?![0-9])")
+    value <- gsub(pattern, originals[i], value, perl = TRUE)
   }
   value
 }
 
+jb_decode_tree <- function(value, encodingMap) {
+  map <- jb_decode_map(encodingMap)
+  if (is.null(map)) return(value)
+  walk <- function(node) {
+    if (is.character(node)) return(jb_decode_string(node, map$originals, map$encoded))
+    if (is.list(node)) {
+      node <- lapply(node, walk)
+      if (!is.null(names(node))) {
+        names(node) <- jb_decode_string(names(node), map$originals, map$encoded)
+      }
+      return(node)
+    }
+    node
+  }
+  walk(value)
+}
+
+jb_decode_value <- function(value, originals, encoded) {
+  jb_decode_string(value, originals, encoded)
+}
+
 jb_decode_tables <- function(tables, encodingMap) {
-  if (is.null(encodingMap) || nrow(encodingMap) == 0) return(tables)
-  order <- order(nchar(encodingMap$encoded), decreasing = TRUE)
-  originals <- encodingMap$original[order]
-  encoded <- encodingMap$encoded[order]
+  if (is.null(jb_decode_map(encodingMap))) return(tables)
   for (key in names(tables)) {
-    tables[[key]]$title <- jb_decode_value(tables[[key]]$title, originals, encoded)
-    tables[[key]]$data <- jb_decode_value(tables[[key]]$data, originals, encoded)
+    tables[[key]] <- jb_decode_tree(tables[[key]], encodingMap)
+  }
+  if (!is.null(names(tables))) {
+    names(tables) <- jb_decode_tree(names(tables), encodingMap)
   }
   tables
 }
@@ -415,7 +443,12 @@ jb_run_analysis <- function(request, runtime) {
   jb_prepare_jasp_results_dir(outputDir, analysisId)
 
   encoded <- jaspTools::encodeOptionsAndDataset(options, dataset)
-  if (nrow(encoded$encodingMap) > 0) {
+  encodingMap <- if (!is.null(encoded$encodingMap) && is.data.frame(encoded$encodingMap)) {
+    encoded$encodingMap
+  } else {
+    data.frame(original = character(), encoded = character(), stringsAsFactors = FALSE)
+  }
+  if (nrow(encodingMap) > 0) {
     result <- jaspTools::runAnalysis(
       name,
       encoded$dataset,
@@ -428,9 +461,15 @@ jb_run_analysis <- function(request, runtime) {
   }
 
   tables <- jb_collect_tables(result$results)
-  tables <- jb_decode_tables(tables, encoded$encodingMap)
+  tables <- jb_decode_tables(tables, encodingMap)
   plots <- jb_collect_plots(result$results, outputDir)
   viewer_results <- jb_stage_plot_resources(result$results, plots, outputDir, analysisId)
+  viewer_results <- jb_decode_tree(viewer_results, encodingMap)
+  if (length(plots) > 0) {
+    for (i in seq_along(plots)) {
+      plots[[i]]$title <- jb_decode_tree(plots[[i]]$title, encodingMap)
+    }
+  }
 
   status <- if (identical(result$status, "complete")) {
     "ok"
@@ -448,7 +487,7 @@ jb_run_analysis <- function(request, runtime) {
     seed = seed,
     tables = tables,
     plots = plots,
-    encoding_map = encoded$encodingMap,
+    encoding_map = encodingMap,
     versions = list(
       R = R.version.string,
       jaspTools = as.character(utils::packageVersion("jaspTools")),
@@ -469,6 +508,17 @@ jb_run_analysis <- function(request, runtime) {
   )
   internalPath <- file.path(outputDir, "resources", as.character(analysisId), "jaspResults.json")
   if (file.exists(internalPath)) {
+    # Rewrite the official object in place as text so formatting stays intact.
+    tryCatch({
+      raw <- rawToChar(readBin(internalPath, what = "raw", n = file.info(internalPath)$size))
+      map <- jb_decode_map(encodingMap)
+      if (!is.null(map)) {
+        raw <- jb_decode_string(raw, map$originals, map$encoded)
+        con <- file(internalPath, "wb")
+        writeBin(charToRaw(raw), con)
+        close(con)
+      }
+    }, error = function(e) invisible(NULL))
     payload$jasp_internal_path <- file.path("resources", as.character(analysisId), "jaspResults.json")
     payload$jasp_internal_json <- tryCatch({
       size <- file.info(internalPath)$size

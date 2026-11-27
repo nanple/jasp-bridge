@@ -113,6 +113,49 @@ function analysisResourceId(analysis, index) {
   return index;
 }
 
+function originalValueJson(original) {
+  if (original === null || original === undefined) return "null\n";
+  const text = String(original);
+  if (/^-?\d+$/.test(text)) return `${Number(text)}\n`;
+  if (/^-?\d+\.\d+$/.test(text) && Number.isFinite(Number(text))) return `${Number(text)}\n`;
+  return `${JSON.stringify(text)}\n`;
+}
+
+function lookupValueLabel(valueLabels, key) {
+  if (!valueLabels || typeof valueLabels !== "object") return undefined;
+  if (Object.prototype.hasOwnProperty.call(valueLabels, key)) return String(valueLabels[key]);
+  const asNumber = Number(key);
+  if (Number.isFinite(asNumber) && Object.prototype.hasOwnProperty.call(valueLabels, String(asNumber))) {
+    return String(valueLabels[String(asNumber)]);
+  }
+  return undefined;
+}
+
+function collectLabelEntries(column, values) {
+  const valueLabels = column.valueLabels;
+  const seen = new Set();
+  const originals = [];
+  const add = (value) => {
+    if (isMissing(value)) return;
+    const key = String(value);
+    if (!seen.has(key)) {
+      seen.add(key);
+      originals.push(key);
+    }
+  };
+  if (Array.isArray(column.labels)) {
+    for (const value of column.labels) add(value);
+  }
+  for (const value of values) add(value);
+  if (valueLabels && typeof valueLabels === "object") {
+    for (const key of Object.keys(valueLabels)) add(key);
+  }
+  return originals.map((original) => ({
+    original,
+    label: lookupValueLabel(valueLabels, original) ?? original,
+  }));
+}
+
 function buildDataSet({ columns, rows, description }) {
   const nRows = rows.length;
   const labels = [];
@@ -126,20 +169,9 @@ function buildDataSet({ columns, rows, description }) {
         codes: values.map((value) => (isMissing(value) ? null : Number(value))),
       };
     }
-    const source =
-      Array.isArray(column.labels) && column.labels.length > 0
-        ? column.labels
-        : values.filter((value) => !isMissing(value)).map(String);
-    const seen = new Map();
-    const ordered = [];
-    for (const value of source) {
-      const key = String(value);
-      if (!seen.has(key)) {
-        seen.set(key, ordered.length + 1);
-        ordered.push(key);
-      }
-    }
-    labels.push({ columnId: index + 1, entries: ordered });
+    const entries = collectLabelEntries(column, values);
+    const seen = new Map(entries.map((entry, ordering) => [entry.original, ordering + 1]));
+    labels.push({ columnId: index + 1, entries });
     return {
       ...column,
       type,
@@ -202,7 +234,7 @@ function writeDatabase(dbPath, { columns, rows, description }) {
     insertColumn.run(
       index + 1,
       column.name,
-      column.name,
+      column.title || column.name,
       column.description || "",
       column.type,
       index,
@@ -210,8 +242,15 @@ function writeDatabase(dbPath, { columns, rows, description }) {
     );
     const columnLabels = labels.find((entry) => entry.columnId === index + 1);
     if (columnLabels) {
-      columnLabels.entries.forEach((label, ordering) => {
-        insertLabel.run(labelId++, index + 1, ordering + 1, ordering, label, `${ordering + 1}\n`);
+      columnLabels.entries.forEach((entry, ordering) => {
+        insertLabel.run(
+          labelId++,
+          index + 1,
+          ordering + 1,
+          ordering,
+          entry.label,
+          originalValueJson(entry.original)
+        );
       });
     }
   });
@@ -312,7 +351,7 @@ function addAnalysisResources(files, analysis, index) {
 }
 
 /**
- * @param {{columns: {name: string, type: string, labels?: string[], description?: string}[],
+ * @param {{columns: {name: string, type: string, title?: string, labels?: string[], valueLabels?: Record<string,string>, description?: string}[],
  *          rows: (number|string|null)[][],
  *          analyses?: {name: string, module: string, options: object, title?: string, columns?: string[], results?: object, jaspResults?: object, resources?: {name: string, data: Buffer|string}[], id?: number}[],
  *          description?: string}} input
