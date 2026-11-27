@@ -1,8 +1,8 @@
 {
-  "version": "0.3.2",
-  "url": "https://github.com/nanple/jasp-bridge/releases/download/v0.3.2/jasp-bridge-0.3.2-portable.zip",
-  "sha256": "0000000000000000000000000000000000000000000000000000000000000000",
-  "notes": "0.3.2：描述统计默认关闭 Shapiro-Wilk 与矩阵散点图，加快题项较多时的运行；用户明确要求时仍可打开。官方便携包含 Windows node.exe，不含 JASP 运行时。 此文件是清单模板；正式 sha256 与下载地址以 GitHub Release 中的 latest.json 为准。",
+  "version": "0.3.3",
+  "url": "https://github.com/nanple/jasp-bridge/releases/download/v0.3.3/jasp-bridge-0.3.3-portable.zip",
+  "sha256": "待发布时填写",
+  "notes": "0.3.3：生成的 .jasp 会把结果表中的编码列名（jaspColumnN）还原为原始变量名，并写入变量标题与 SPSS 值标签；已渲染进 PNG 的图如仍显示编码名，可在 JASP 中 Refresh。官方便携包含 Windows node.exe，不含 JASP 运行时。 此文件是清单模板；正式 sha256 与下载地址以 GitHub Release 中的 latest.json 为准。",
   "runtime_required": false,
   "min_plugin_version": "0.1.0"
 }

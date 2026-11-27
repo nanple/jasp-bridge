@@ -1,10 +1,10 @@
 {
   "schema": "jasp-bridge/progress@1",
-  "updated_at": "2026-11-27T07:35:00.000Z",
-  "version": "0.3.2",
-  "phase": "0.3.2：描述统计默认关闭 Shapiro-Wilk 与矩阵散点图",
+  "updated_at": "2026-11-27T12:00:00.000Z",
+  "version": "0.3.3",
+  "phase": "0.3.3：还原写入 .jasp 的编码变量名，并写入变量标题与值标签",
   "status": "released",
-  "summary": "0.3.2 正式发布：描述统计的 Shapiro-Wilk 与矩阵散点图改为默认关闭（与官方 JASP 一致），加快题项较多时的运行；用户或对话明确要求时仍可打开，变量数达到或超过 15 个时计划会提醒可能较慢，但不会取消明确要求。22 类分析能力与 0.3.1 相同。测量等值、元分析、功效分析、APA 表格、图中可读变量名、更稳定打开 .jasp 仍属后续 3.0 工作。",
+  "summary": "0.3.3 正式发布：生成的 .jasp 会把结果表中的编码列名（jaspColumnN）还原为原始变量名，并写入变量标题与 SPSS 值标签；内部对象 id（如 ..._jaspColumn21）保持不变。已经画进 PNG 的图轴文字无法事后改掉，打开后可在 JASP 中 Refresh 按原始列名重算。22 类分析能力与 0.3.2 相同。测量等值、元分析、功效分析、APA 表格、更稳定打开 .jasp 仍属后续 3.0 工作。",
   "completed": [
     "重复测量 ANOVA（球形检验、GG 校正、混合设计、事后比较）",
     "ANOVA 事后比较（Tukey/Holm/Bonferroni/Scheffé/Šidák/FDR）",
@@ -34,14 +34,15 @@
     "宿主提示词与工具说明加强：宿主只转发和展示插件结果，不要自行计算或改用 Python 做旁路分析",
     "Excel（.xlsx/.xls/.xlsm）与 SPSS（.sav）直接读取：多表可选，保留 .sav 标签与 measure 类型",
     "MCP 宿主字符串数组与布尔值强制还原（计划校验与写入引擎前）",
-    "描述统计默认关闭 Shapiro-Wilk 与矩阵散点图；变量数 ≥ 15 且显式打开时在计划中警告，不取消用户明确要求"
+    "描述统计默认关闭 Shapiro-Wilk 与矩阵散点图；变量数 ≥ 15 且显式打开时在计划中警告，不取消用户明确要求",
+    "生成的 .jasp 还原原始变量名（查看器结果与 jaspResults），并写入变量标题与 SPSS 值标签"
   ],
   "next": [
     "测量等值",
     "元分析",
     "功效分析",
     "更接近 APA 的表格",
-    "图中使用可读变量名（而非编码后的 jaspColumnN）",
+    "已经画进 PNG 的图若仍显示编码名，需在 JASP 中 Refresh 重算",
     "更稳定地打开 .jasp 文件",
     "缺失值策略（FIML / 多重插补）扩展到各分析"
   ],
@@ -106,13 +107,23 @@
       "id": "t_032_release",
       "content": "发布 0.3.2 到 https://github.com/nanple/jasp-bridge/releases/tag/v0.3.2",
       "status": "completed"
+    },
+    {
+      "id": "t_jasp_column_names",
+      "content": "生成的 .jasp 还原原始变量名并写入变量标题与值标签已纳入 0.3.3",
+      "status": "completed"
+    },
+    {
+      "id": "t_033_release",
+      "content": "发布 0.3.3 到 https://github.com/nanple/jasp-bridge/releases/tag/v0.3.3",
+      "status": "completed"
     }
   ],
   "commands": {
     "smoke": "npm run smoke",
     "status": "npm run status",
     "progress": "npm run progress",
-    "build": ".\\build-release.ps1 -Version 0.3.2 -IncludeNode"
+    "build": ".\\build-release.ps1 -Version 0.3.3 -IncludeNode"
   },
   "paths": {
     "recipes": "src/plan/recipes.js",

@@ -296,13 +296,13 @@ npm start        # 以 stdio 启动 MCP 服务（通常由 WorkBuddy 拉起）
 **A. 便携 zip（推荐给普通用户，方案 B）**
 
 ```powershell
-.\build-release.ps1 -Version 0.3.2 -IncludeNode
+.\build-release.ps1 -Version 0.3.3 -IncludeNode
 ```
 
 生成：
 
 ```text
-dist/jasp-bridge-0.3.2-portable.zip
+dist/jasp-bridge-0.3.3-portable.zip
 ```
 
 zip 内含 `node.exe`、`node_modules`、`src`、`scripts`、`install.ps1`。运行时**不**打进 zip，而是在安装时从用户本机 JASP 复制，因此包体小、无需 GitHub。
@@ -361,8 +361,8 @@ npm install -g @yourscope/jasp-bridge
 
 ```json
 {
-  "version": "0.3.2",
-  "url": "https://.../jasp-bridge-0.3.2-portable.zip",
+  "version": "0.3.3",
+  "url": "https://.../jasp-bridge-0.3.3-portable.zip",
   "sha256": "<64 位十六进制>",
   "notes": "更新说明",
   "runtime_required": false,
@@ -397,7 +397,7 @@ npm install -g @yourscope/jasp-bridge
 
 ```powershell
 powershell -ExecutionPolicy Bypass -File "$HOME\.workbuddy\jasp-bridge\update.ps1" `
-  -PackageDir "$HOME\.workbuddy\jasp-bridge\updates\0.3.2\package" `
+  -PackageDir "$HOME\.workbuddy\jasp-bridge\updates\0.3.3\package" `
   -InstallDir "$HOME\.workbuddy\jasp-bridge"
 ```
 

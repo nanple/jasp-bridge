@@ -2,7 +2,7 @@
 
 以 **WorkBuddy 为对话入口**、**JASP 为统计引擎**的 MCP 插件。用户在 WorkBuddy 里用自然语言提需求，插件把需求整理成可确认的分析计划，再调用本机 JASP/R 执行，最后把结果以 Markdown 表格 + APA 报告提示返回对话。
 
-> 当前状态（0.3.2，2026-11-27）：**22 类**可运行分析，15 个 MCP 工具。描述统计默认关闭 Shapiro-Wilk 与矩阵散点图，加快题项较多时的运行；用户明确要求时仍可打开。可直接加载 Excel（`.xlsx` / `.xls`）和 SPSS（`.sav`）。已修复部分 MCP 宿主改写数组/布尔参数导致计划校验失败或 JASP 报错的问题。类型推断不再仅凭唯一值把均分判成有序变量；用户未指定题项或因子时，插件会给出可确认的建议方案，确认前不执行。统计数字、表、图和 `.jasp` 只由本机 JASP 引擎产生，宿主只负责转发和展示。其中 `RegressionLinear`、配对 t、ANCOVA、ANOVA 仍标 beta。本机没有 R/jaspTools 时会进入 **dry-run**，只生成可复现工件，不产生统计数字。
+> 当前状态（0.3.3，2026-11-27）：**22 类**可运行分析，15 个 MCP 工具。生成的 `.jasp` 会把结果表中的编码列名（`jaspColumnN`）还原为原始变量名，并写入变量标题与 SPSS 值标签。描述统计默认关闭 Shapiro-Wilk 与矩阵散点图，加快题项较多时的运行；用户明确要求时仍可打开。可直接加载 Excel（`.xlsx` / `.xls`）和 SPSS（`.sav`）。已修复部分 MCP 宿主改写数组/布尔参数导致计划校验失败或 JASP 报错的问题。类型推断不再仅凭唯一值把均分判成有序变量；用户未指定题项或因子时，插件会给出可确认的建议方案，确认前不执行。统计数字、表、图和 `.jasp` 只由本机 JASP 引擎产生，宿主只负责转发和展示。其中 `RegressionLinear`、配对 t、ANCOVA、ANOVA 仍标 beta。本机没有 R/jaspTools 时会进入 **dry-run**，只生成可复现工件，不产生统计数字。
 >
 > 源码与 Release：https://github.com/nanple/jasp-bridge
 > 随包实用指南见 [GUIDE.md](GUIDE.md)，图文版见 `docs/visual-guide.pdf`，示例数据在 `examples/demo.csv`、`examples/factor-demo.csv`、`examples/mixed-demo.csv`。
@@ -81,7 +81,7 @@ JASP 免费开源，结果随选项即时更新，假设检验与效应量同时
 
 ### 3.1 一键安装（推荐，方案 B）
 
-从 GitHub Release 下载官方便携包 [jasp-bridge-0.3.2-portable.zip](https://github.com/nanple/jasp-bridge/releases/download/v0.3.2/jasp-bridge-0.3.2-portable.zip)，解压后在该目录运行：
+从 GitHub Release 下载官方便携包 [jasp-bridge-0.3.3-portable.zip](https://github.com/nanple/jasp-bridge/releases/download/v0.3.3/jasp-bridge-0.3.3-portable.zip)，解压后在该目录运行：
 
 ```powershell
 powershell -ExecutionPolicy Bypass -File .\install.ps1
@@ -331,8 +331,8 @@ MCP 侧也提供同名工具 `jasp_progress`（`format=markdown|json`），两�
 
 ## 10. 路线图
 
-- **当前（0.3.2）**：描述统计默认关闭 Shapiro-Wilk 与矩阵散点图，加快题项较多时的运行；用户明确要求时仍可打开，变量数 ≥ 15 时会提醒可能较慢。0.3.1 已支持直接读取 Excel（`.xlsx` / `.xls`）和 SPSS（`.sav`），并修复部分 MCP 宿主改写数组/布尔参数的问题。宿主应展示插件返回的表、图和 `.jasp`，不要自行计算。
-- **下一步（3.0 仍未做部分）**：测量等值、元分析、功效分析、更接近 APA 的表格、图中使用可读变量名（而非 `jaspColumnN`）、更稳定地打开 `.jasp` 文件；以及更完整的缺失值策略（FIML）。
+- **当前（0.3.3）**：生成的 `.jasp` 会把结果表中的编码列名（`jaspColumnN`）还原为原始变量名，并写入变量标题与 SPSS 值标签。0.3.2 已将描述统计的 Shapiro-Wilk 与矩阵散点图改为默认关闭；用户明确要求时仍可打开，变量数 ≥ 15 时会提醒可能较慢。0.3.1 已支持直接读取 Excel（`.xlsx` / `.xls`）和 SPSS（`.sav`），并修复部分 MCP 宿主改写数组/布尔参数的问题。宿主应展示插件返回的表、图和 `.jasp`，不要自行计算。
+- **下一步（3.0 仍未做部分）**：测量等值、元分析、功效分析、更接近 APA 的表格、更稳定地打开 `.jasp` 文件；已经画进 PNG 的图若仍显示编码名，可在 JASP 中 Refresh。以及更完整的缺失值策略（FIML）。
 
 ---
 
@@ -353,16 +353,16 @@ npm start        # 以 stdio 启动 MCP 服务（通常由 WorkBuddy 拉起）
 **A. 便携 zip（推荐给普通用户，方案 B）**
 
 ```powershell
-.\build-release.ps1 -Version 0.3.2 -IncludeNode
+.\build-release.ps1 -Version 0.3.3 -IncludeNode
 ```
 
 生成：
 
 ```text
-dist/jasp-bridge-0.3.2-portable.zip
+dist/jasp-bridge-0.3.3-portable.zip
 ```
 
-官方 0.3.2 便携包约 41 MB，内含 `node_modules`、`src`、`scripts`、文档、示例和 Windows `node.exe`，**不**包含约 1.7 GB 的 JASP 运行时。运行时在安装时从用户本机 JASP 复制。不加 `-IncludeNode` 时体积约 5.5 MB，安装后需使用系统或 WorkBuddy 已有的 Node。
+官方 0.3.3 便携包约 41 MB，内含 `node_modules`、`src`、`scripts`、文档、示例和 Windows `node.exe`，**不**包含约 1.7 GB 的 JASP 运行时。运行时在安装时从用户本机 JASP 复制。不加 `-IncludeNode` 时体积约 5.5 MB，安装后需使用系统或 WorkBuddy 已有的 Node。
 
 **B. npm 包（给开发者，目前未发布）**
 
@@ -371,7 +371,7 @@ dist/jasp-bridge-0.3.2-portable.zip
 **C. 公开下载地址**
 
 - 仓库：https://github.com/nanple/jasp-bridge
-- 便携包：https://github.com/nanple/jasp-bridge/releases/download/v0.3.2/jasp-bridge-0.3.2-portable.zip
+- 便携包：https://github.com/nanple/jasp-bridge/releases/download/v0.3.3/jasp-bridge-0.3.3-portable.zip
 - 更新清单 `latest.json`：https://github.com/nanple/jasp-bridge/releases/latest/download/latest.json
 
 ### 11.2 国内网络方案
@@ -416,8 +416,8 @@ dist/jasp-bridge-0.3.2-portable.zip
 
 ```json
 {
-  "version": "0.3.2",
-  "url": "https://.../jasp-bridge-0.3.2-portable.zip",
+  "version": "0.3.3",
+  "url": "https://.../jasp-bridge-0.3.3-portable.zip",
   "sha256": "<64 位十六进制>",
   "notes": "更新说明",
   "runtime_required": false,
@@ -452,7 +452,7 @@ dist/jasp-bridge-0.3.2-portable.zip
 
 ```powershell
 powershell -ExecutionPolicy Bypass -File "$HOME\.workbuddy\jasp-bridge\update.ps1" `
-  -PackageDir "$HOME\.workbuddy\jasp-bridge\updates\0.3.2\package" `
+  -PackageDir "$HOME\.workbuddy\jasp-bridge\updates\0.3.3\package" `
   -InstallDir "$HOME\.workbuddy\jasp-bridge"
 ```
 
