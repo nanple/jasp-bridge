@@ -1,6 +1,6 @@
 {
   "name": "jasp-bridge",
-  "version": "0.3.1",
+  "version": "0.3.2",
   "description": "WorkBuddy MCP plugin that turns natural-language requests into JASP analyses",
   "type": "module",
   "bin": {

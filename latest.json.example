@@ -1,8 +1,8 @@
 {
-  "version": "0.3.1",
-  "url": "https://github.com/nanple/jasp-bridge/releases/download/v0.3.1/jasp-bridge-0.3.1-portable.zip",
+  "version": "0.3.2",
+  "url": "https://github.com/nanple/jasp-bridge/releases/download/v0.3.2/jasp-bridge-0.3.2-portable.zip",
   "sha256": "0000000000000000000000000000000000000000000000000000000000000000",
-  "notes": "0.3.1：可直接加载 Excel（.xlsx/.xls）和 SPSS（.sav）；修复部分 MCP 宿主改写数组/布尔参数导致计划校验失败或 JASP 报错的问题。官方便携包含 Windows node.exe，不含 JASP 运行时。 此文件是清单模板；正式 sha256 与下载地址以 GitHub Release 中的 latest.json 为准。",
+  "notes": "0.3.2：描述统计默认关闭 Shapiro-Wilk 与矩阵散点图，加快题项较多时的运行；用户明确要求时仍可打开。官方便携包含 Windows node.exe，不含 JASP 运行时。 此文件是清单模板；正式 sha256 与下载地址以 GitHub Release 中的 latest.json 为准。",
   "runtime_required": false,
   "min_plugin_version": "0.1.0"
 }
