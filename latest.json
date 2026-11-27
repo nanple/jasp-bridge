@@ -1,8 +1,8 @@
 {
-  "version": "0.3.3",
-  "url": "https://github.com/nanple/jasp-bridge/releases/download/v0.3.3/jasp-bridge-0.3.3-portable.zip",
-  "sha256": "69859cd69a117e007772a081b64d9d765a78f0ee28496359206f637da66d5232",
-  "notes": "0.3.3：生成的 .jasp 会把结果表中的编码列名（jaspColumnN）还原为原始变量名，并写入变量标题与 SPSS 值标签；已渲染进 PNG 的图如仍显示编码名，可在 JASP 中 Refresh。官方便携包含 Windows node.exe，不含 JASP 运行时。",
+  "version": "0.3.4",
+  "url": "https://github.com/nanple/jasp-bridge/releases/download/v0.3.4/jasp-bridge-0.3.4-portable.zip",
+  "sha256": "c0d4a54511df09aaea1e90eb0a18126078d6200904d39bbc0e82e54074c3827c",
+  "notes": "0.3.4：提高对实验描述和数据列的可识别度。可以说「组内」等设计用语，并用「反应时」等口语对上 rt 这类列名；未点名方法时会给出可确认的建议（说明理由、备选，以及和表格对不上时的提醒）。量表总分只作为建议，不会自动计算。仍为 22 类分析、16 个 MCP 工具，不是新方法包。多因素组内设计目前仍不能跑。官方便携包含 Windows node.exe，不含 JASP 运行时。",
   "runtime_required": false,
   "min_plugin_version": "0.1.0"
 }

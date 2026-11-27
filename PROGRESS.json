@@ -1,10 +1,10 @@
 {
   "schema": "jasp-bridge/progress@1",
-  "updated_at": "2026-11-27T14:30:00.000Z",
-  "version": "0.3.3",
-  "phase": "0.3.3：还原写入 .jasp 的编码变量名，并写入变量标题与值标签",
+  "updated_at": "2026-11-27T15:00:00.000Z",
+  "version": "0.3.4",
+  "phase": "0.3.4：方法顾问（识别与选型）",
   "status": "released",
-  "summary": "0.3.3 正式发布：生成的 .jasp 会把结果表中的编码列名（jaspColumnN）还原为原始变量名，并写入变量标题与 SPSS 值标签；内部对象 id（如 ..._jaspColumn21）保持不变。已经画进 PNG 的图轴文字无法事后改掉，打开后可在 JASP 中 Refresh 按原始列名重算。22 类分析能力与 0.3.2 相同。测量等值、元分析、功效分析、APA 表格、更稳定打开 .jasp 仍属后续 3.0 工作。",
+  "summary": "0.3.4 正式发布：提高对实验描述和数据列的可识别度。插件会对照已加载表格核实因变量、实验设计（组内/组间等）和人口学变量；可用「反应时」等口语对上 rt 这类列名；未点名方法时给出可确认的建议，并说明理由、备选，以及说法和表格对不上时的提醒。量表总分只作为建议，不会自动计算。仍为 22 类分析、16 个 MCP 工具，不是新方法包。多因素组内设计目前仍不能跑。测量等值、元分析、功效分析、APA 表格、更稳定打开 .jasp 仍属后续 3.0 工作。",
   "completed": [
     "重复测量 ANOVA（球形检验、GG 校正、混合设计、事后比较）",
     "ANOVA 事后比较（Tukey/Holm/Bonferroni/Scheffé/Šidák/FDR）",
@@ -35,10 +35,11 @@
     "Excel（.xlsx/.xls/.xlsm）与 SPSS（.sav）直接读取：多表可选，保留 .sav 标签与 measure 类型",
     "MCP 宿主字符串数组与布尔值强制还原（计划校验与写入引擎前）",
     "描述统计默认关闭 Shapiro-Wilk 与矩阵散点图；变量数 ≥ 15 且显式打开时在计划中警告，不取消用户明确要求",
-    "生成的 .jasp 还原原始变量名（查看器结果与 jaspResults），并写入变量标题与 SPSS 值标签"
+    "生成的 .jasp 还原原始变量名（查看器结果与 jaspResults），并写入变量标题与 SPSS 值标签",
+    "方法顾问：对照已加载表格核实因变量、设计与人口学变量，未点名方法时给出可确认的建议方案（0.3.4）"
   ],
   "next": [
-    "待用户确认后发布方法顾问（识别与选型），暂不改版本号",
+    "GitHub Release 与同步到 WorkBuddy / 桌面包（本地材料已预备，待发布）",
     "测量等值",
     "元分析",
     "功效分析",
@@ -121,15 +122,25 @@
     },
     {
       "id": "t_method_advisor",
-      "content": "方法顾问已在本地实现：对照表格核实因变量/设计/人口学变量，未点名方法时给出可确认的建议方案。版本号仍为 0.3.3，待用户确认后再发布。",
+      "content": "方法顾问已纳入 0.3.4：对照表格核实因变量/设计/人口学变量，未点名方法时给出可确认的建议方案。",
       "status": "completed"
+    },
+    {
+      "id": "t_034_prepare",
+      "content": "0.3.4 本地发布材料已预备（版本号、文档、便携包与校验哈希）；尚未 push、打 tag 或创建 GitHub Release。",
+      "status": "completed"
+    },
+    {
+      "id": "t_034_release",
+      "content": "发布 0.3.4 到 https://github.com/nanple/jasp-bridge/releases/tag/v0.3.4，并同步到 WorkBuddy 与桌面包（待明天进行）",
+      "status": "pending"
     }
   ],
   "commands": {
     "smoke": "npm run smoke",
     "status": "npm run status",
     "progress": "npm run progress",
-    "build": ".\\build-release.ps1 -Version 0.3.3 -IncludeNode"
+    "build": ".\\build-release.ps1 -Version 0.3.4 -IncludeNode"
   },
   "paths": {
     "recipes": "src/plan/recipes.js",
@@ -153,6 +164,7 @@
     ],
     "ingest": "src/data/ingest.js",
     "excel_reader": "src/data/excel.js",
-    "spss_reader": "src/data/spss.js"
+    "spss_reader": "src/data/spss.js",
+    "advise": "src/plan/advise.js"
   }
 }

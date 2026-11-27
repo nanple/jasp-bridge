@@ -1,6 +1,6 @@
 # JASP-Bridge 实用指南
 
-版本：0.3.3（2026-11-27）  
+版本：0.3.4（2026-11-27）  
 适用：WorkBuddy + 本机 JASP（Windows 10/11 64 位）
 
 > 图文版：浏览器打开 `docs/visual-guide.html`，或直接看 `docs/visual-guide.pdf`。
@@ -54,7 +54,7 @@ JASP-Bridge 是一个 WorkBuddy 的 MCP 插件。它把自然语言请求整理�
 
 ### 4.1 超级简单版：把安装包直接发给 WorkBuddy
 
-如果你的 WorkBuddy 版本允许执行本地命令或文件操作，可以把 `jasp-bridge-0.3.3-portable.zip` 拖进对话框，然后发：
+如果你的 WorkBuddy 版本允许执行本地命令或文件操作，可以把 `jasp-bridge-0.3.4-portable.zip` 拖进对话框，然后发：
 
 ```text
 这是我下载的 JASP-Bridge 安装包。请帮我：
@@ -133,10 +133,10 @@ powershell -ExecutionPolicy Bypass -File .\install.ps1
 
 ### 4.6 便携包里有什么、没有什么
 
-官方 `jasp-bridge-0.3.3-portable.zip` 约 41 MB，内含插件代码、`node_modules`、文档、示例和 Windows `node.exe`。**不包含**约 1.7 GB 的 JASP 运行时（安装时由 `install.ps1` 从本机 JASP 复制）。
+官方 `jasp-bridge-0.3.4-portable.zip` 约 41 MB，内含插件代码、`node_modules`、文档、示例和 Windows `node.exe`。**不包含**约 1.7 GB 的 JASP 运行时（安装时由 `install.ps1` 从本机 JASP 复制）。
 
 - 仓库：https://github.com/nanple/jasp-bridge
-- 便携包：https://github.com/nanple/jasp-bridge/releases/download/v0.3.3/jasp-bridge-0.3.3-portable.zip
+- 便携包：https://github.com/nanple/jasp-bridge/releases/download/v0.3.4/jasp-bridge-0.3.4-portable.zip
 - 更新清单：https://github.com/nanple/jasp-bridge/releases/latest/download/latest.json
 
 ---
@@ -228,8 +228,9 @@ gender 的 1 表示男，2 表示女
 ## 7. 现在不能做什么，以及使用注意
 
 - Excel 多工作表默认只读第一张，要用其他表请在加载时指定 `sheet`（表名或从 1 开始的序号）；密码保护的工作簿需先取消密码；`.xlsm` 只读取单元格数据，不会执行宏；
-- 不能自动计算量表总分；反向题自动识别不保证 100%；
+- 不能自动计算量表总分；反向题自动识别不保证 100%。前缀相近的题项可能提示「看起来像同一个量表，是否先算总分或均分」，这只是建议，确认前不会自动计算或反向计分；
 - 不能做多因素被试内设计（如 2×3 全被试内）；重复测量目前是单一被试内因子，可叠加 1–2 个组间因子；
+- 方法顾问会对照已加载的表格核实因变量、实验设计（「组内」与「被试内」「重复测量」属同一类）和人口学变量。可用「反应时」「正确率」「学历」等口语对上 `rt`、`acc`、`education` 这类列名；对不上时会提问，不会偷偷选定。只描述实验情景、没有说出方法名时，也会给出可确认的建议，并说明理由、备选，以及说法和表格对不上时的提醒。这不是新方法包，仍是现有 22 类分析；
 - 因子分析 / SEM：EFA/PCA 至少需要 3 个观测变量。只说“做 EFA / CFA / SEM”且未指定题项或因子时，插件会根据列名、前缀和类型给出建议方案，并标明这是建议、须确认后才执行；你也可以继续显式提供 `options.factors` 或 `options.models`。插件不会把建议当成已确认的事实，也不会自动开跑；
 - 简单效应支持一个调节因子，也可以加第二个调节因子（三因素）；数据需要平衡，有空格子时 JASP 无法估计；
 - Process 支持 Model 1 / 4 / 6 / 7 / 8 / 14 / 15（含有调节的中介）。双调节、并行多中介等尚未封装。对话中提到缺失或 FIML 时可用 FIML，否则默认 listwise；
@@ -366,7 +367,7 @@ gender 的 1 表示男，2 表示女
 先对 sat1-sat5 做信度；然后用 sat_mean、mot_mean、age 预测 perf，做回归。
 ```
 
-插件会分别生成信度计划和回归计划，依次执行。一次计划只做一个分析，多个分析可以连续说。
+插件会分别生成信度计划和回归计划，依次执行。每份计划仍只做一个分析；如果只描述实验情景、没有点名方法，也可能一次给出几份相关计划（例如先描述统计、再做重复测量），需要分别确认后再执行。多个分析也可以连续说。
 
 ---
 
@@ -566,7 +567,7 @@ $HOME\.workbuddy\mcp.json
 
 ## 15. 版本与路线图
 
-- **当前（0.3.3）**：生成的 `.jasp` 会把结果表中的编码列名（`jaspColumnN`）还原为原始变量名，并写入变量标题与 SPSS 值标签。0.3.2 已将描述统计的 Shapiro-Wilk 与矩阵散点图改为默认关闭；用户明确要求时仍可打开，变量数 ≥ 15 时会提醒可能较慢。0.3.1 已支持直接读取 Excel（`.xlsx` / `.xls`）和 SPSS（`.sav`），并修复部分 MCP 宿主改写数组/布尔参数的问题。表、图和 `.jasp` 由 JASP 引擎产生，宿主只负责展示。其中回归、配对 t、ANCOVA、ANOVA 仍标 beta。
+- **当前（0.3.4）**：提高对实验描述和数据列的可识别度（组内/组间等设计用语、口语别名对列名、未点名方法时的可确认建议，以及理由、备选和不一致提醒）。仍为 22 类分析、16 个 MCP 工具，不是新方法包。量表总分只作为建议，不会自动计算；多因素组内设计目前仍不能跑。0.3.3 已让生成的 `.jasp` 把结果表中的编码列名还原为原始变量名，并写入变量标题与值标签。0.3.2 已将描述统计的 Shapiro-Wilk 与矩阵散点图改为默认关闭。0.3.1 已支持直接读取 Excel 和 SPSS。表、图和 `.jasp` 由 JASP 引擎产生，宿主只负责展示。其中回归、配对 t、ANCOVA、ANOVA 仍标 beta。
 - **下一步（3.0 仍未做部分）**：测量等值、元分析、功效分析、更接近 APA 的表格、更稳定地打开 `.jasp`；已经画进 PNG 的图若仍显示编码名，可在 JASP 中 Refresh。以及把缺失值策略（FIML / 多重插补）扩展到更多分析。
 
 ---
