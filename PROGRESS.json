@@ -1,6 +1,6 @@
 {
   "schema": "jasp-bridge/progress@1",
-  "updated_at": "2026-11-27T12:00:00.000Z",
+  "updated_at": "2026-11-27T14:30:00.000Z",
   "version": "0.3.3",
   "phase": "0.3.3：还原写入 .jasp 的编码变量名，并写入变量标题与值标签",
   "status": "released",
@@ -38,6 +38,7 @@
     "生成的 .jasp 还原原始变量名（查看器结果与 jaspResults），并写入变量标题与 SPSS 值标签"
   ],
   "next": [
+    "待用户确认后发布方法顾问（识别与选型），暂不改版本号",
     "测量等值",
     "元分析",
     "功效分析",
@@ -116,6 +117,11 @@
     {
       "id": "t_033_release",
       "content": "发布 0.3.3 到 https://github.com/nanple/jasp-bridge/releases/tag/v0.3.3",
+      "status": "completed"
+    },
+    {
+      "id": "t_method_advisor",
+      "content": "方法顾问已在本地实现：对照表格核实因变量/设计/人口学变量，未点名方法时给出可确认的建议方案。版本号仍为 0.3.3，待用户确认后再发布。",
       "status": "completed"
     }
   ],

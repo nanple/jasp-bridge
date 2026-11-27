@@ -3,21 +3,41 @@ import { looksCategorical, looksLikeId } from "../data/ingest.js";
 const ITEM_SUFFIX = /^(.*?)[_-]?(\d+)$/u;
 const COMPOSITE_NAME =
   /(均分|总分|得分|合成|平均分|量表分)$|(^|[_-])(mean|avg|total|sum|score|composite)([_-]|$)/i;
-const DEMOGRAPHIC_NAME = /^(age|ages|年龄|岁|income|收入|year|年份)$/i;
+const DEMOGRAPHIC_NAME =
+  /^(age|ages|年龄|岁|gender|sex|性别|edu|educ|education|学历|教育程度|教育|income|收入|year|年份|grade|年级|major|专业|occupation|job|职业|ethnicity|ethnic|民族|race|种族|marital|婚姻|婚姻状况)$/i;
 
-function isCompositeName(name) {
+export function isCompositeName(name) {
   return COMPOSITE_NAME.test(String(name));
 }
 
-function isDemographicName(name) {
+export function isDemographicName(name) {
   return DEMOGRAPHIC_NAME.test(String(name).trim());
+}
+
+function nameTokens(value) {
+  const raw = String(value || "");
+  const tokens = new Set();
+  for (const part of raw.split(/[^A-Za-z0-9\u4e00-\u9fff]+/)) {
+    if (!part) continue;
+    tokens.add(part);
+    const camel = part.split(/(?<=[a-z])(?=[A-Z])|(?<=[A-Z])(?=[A-Z][a-z])/);
+    for (const piece of camel) if (piece) tokens.add(piece);
+  }
+  return [...tokens];
+}
+
+export function looksLikeDemographic(variable) {
+  const name = String(variable?.name || "").trim();
+  const label = String(variable?.label || "").trim();
+  if (isDemographicName(name) || (label && isDemographicName(label))) return true;
+  return nameTokens(`${name} ${label}`).some((token) => isDemographicName(token));
 }
 
 export function itemCandidates(session) {
   return (session?.data?.variables || []).filter((variable) => {
     if (!["scale", "ordinal"].includes(variable.type)) return false;
     if (looksLikeId(variable.name) || looksCategorical(variable.name)) return false;
-    if (isDemographicName(variable.name) || isCompositeName(variable.name)) return false;
+    if (looksLikeDemographic(variable) || isCompositeName(variable.name)) return false;
     return true;
   });
 }
@@ -205,4 +225,49 @@ export function suggestionWarning(suggestion) {
   }
   lines.push(...(suggestion.notes || []));
   return lines;
+}
+
+/**
+ * General scale-membership suggestions for any analysis.
+ * Never auto-compute totals or reverse-score; never claim reverse items as certain.
+ */
+export function suggestScaleMembership(session) {
+  const candidates = itemCandidates(session);
+  const { scales } = groupByPrefix(candidates);
+  const variables = session?.data?.variables || [];
+  const suggestions = [];
+
+  for (const scale of scales) {
+    const hasComposite = variables.some(
+      (variable) =>
+        isCompositeName(variable.name) &&
+        String(variable.name).toLowerCase().includes(String(scale.prefix).toLowerCase())
+    );
+    suggestions.push({
+      prefix: scale.prefix,
+      items: scale.items,
+      hasComposite,
+      note: hasComposite
+        ? `「${scale.items.join("、")}」列名前缀相同，看起来可能属于同一个量表；表里似乎已有合成列，请核对是否就是该量表的总分或均分。`
+        : `「${scale.items.join("、")}」列名前缀相同，看起来可能属于同一个量表。如需以总分或均分做后续分析，请先确认是否计算（插件不会自动计算，也不会自行反向计分）。`,
+    });
+  }
+
+  const reverseGuess = candidates.filter((variable) => {
+    const name = String(variable.name || "");
+    const label = String(variable.label || "");
+    return /(?:^|_|-)(r|rev|reverse|反向)(?:[_-]|\d|$)/i.test(name) || /反向/.test(label);
+  });
+  if (reverseGuess.length > 0) {
+    suggestions.push({
+      prefix: null,
+      items: reverseGuess.map((variable) => variable.name),
+      tentativeReverse: true,
+      note: `以下题项的名称或标签可能表示反向题，这只是根据命名的猜测，不能当作确定结论：${reverseGuess
+        .map((variable) => variable.name)
+        .join("、")}。请人工核对后再决定是否反向计分。`,
+    });
+  }
+
+  return suggestions;
 }

@@ -204,7 +204,7 @@ test("planner: t 检验缺分组变量时追问", () => {
   const { session } = fixture();
   const plan = buildPlan({
     session,
-    utterance: "性别在绩效上有没有差异",
+    utterance: "绩效有没有差异",
     analysis: "ttest_independent",
     variables: { dependent: ["perf"] },
   });

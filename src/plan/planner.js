@@ -2,13 +2,19 @@ import { newId, nowIso } from "../config.js";
 import {
   getRecipe,
   detectContrast,
-  detectRecipe,
+  detectNamedMethod,
   isSupportedProcessModel,
   listRecipes,
   resolveProcessModel,
 } from "./recipes.js";
-import { suggestStructure, suggestionWarning } from "./suggest.js";
+import { looksLikeDemographic, suggestStructure, suggestionWarning } from "./suggest.js";
 import { coerceOptions, coerceVariableRoles } from "./coerce.js";
+import { looksLikeId } from "../data/ingest.js";
+import {
+  buildAdvice,
+  listSafeMentionedColumns,
+  roleAssignments,
+} from "./advise.js";
 
 export function normalizeVariables(input = {}) {
   return coerceVariableRoles(input);
@@ -24,35 +30,64 @@ function variableIndex(session) {
 }
 
 function autoDetectVariables(utterance, session) {
-  const text = String(utterance || "").toLowerCase();
-  const variables = session?.data?.variables || [];
-  const found = new Set();
+  return listSafeMentionedColumns(utterance, session);
+}
 
-  for (const variable of variables) {
-    const name = variable.name.toLowerCase();
-    if (name.length >= 2 && text.includes(name)) found.add(variable.name);
+function uniqueTexts(items) {
+  const seen = new Set();
+  const result = [];
+  for (const item of items || []) {
+    if (!item || seen.has(item)) continue;
+    seen.add(item);
+    result.push(item);
   }
+  return result;
+}
 
-  // 支持 sat1-sat5 / q1 到 q5 这类区间写法，避免只抓到首尾两列
-  const rangePattern =
-    /([a-z_][a-z0-9_]*?)(\d+)\s*(?:-|–|—|~|到|至)\s*([a-z_][a-z0-9_]*?)(\d+)/gi;
-  let match;
-  while ((match = rangePattern.exec(text))) {
-    const [, prefixA, startText, prefixB, endText] = match;
-    if (prefixA.toLowerCase() !== prefixB.toLowerCase()) continue;
-    const start = Number(startText);
-    const end = Number(endText);
-    if (!Number.isFinite(start) || !Number.isFinite(end) || end < start) continue;
-    for (const variable of variables) {
-      const parts = /^([a-z_][a-z0-9_]*?)(\d+)$/i.exec(variable.name);
-      if (!parts) continue;
-      if (parts[1].toLowerCase() !== prefixA.toLowerCase()) continue;
-      const index = Number(parts[2]);
-      if (index >= start && index <= end) found.add(variable.name);
+function detectedForRole(recipe, role, names, session) {
+  return names.filter((name) => {
+    const variable = (session?.data?.variables || []).find((item) => item.name === name);
+    if (!compatible(variable, recipe.roles[role]?.kinds)) return false;
+    if (recipe.key === "rm_anova" && role === "repeatedMeasuresCells") {
+      if (looksLikeId(variable.name) || looksLikeDemographic(variable)) return false;
     }
-  }
+    return true;
+  });
+}
 
-  return variables.filter((variable) => found.has(variable.name)).map((variable) => variable.name);
+function attachRecommendation(plan, advice, extra = {}) {
+  if (!advice) return plan;
+  plan.questions = uniqueTexts([...(plan.questions || []), ...(advice.questions || [])]);
+  plan.warnings = uniqueTexts([...(plan.warnings || []), ...(advice.warnings || [])]);
+  if (plan.questions.length > 0 && plan.status === "proposed") plan.status = "needs_input";
+
+  const sequence = extra.sequence;
+  const hasAdvice =
+    advice.why ||
+    (advice.alternatives || []).length > 0 ||
+    (advice.warnings || []).length > 0 ||
+    (advice.questions || []).length > 0 ||
+    advice.design?.claimed ||
+    advice.design?.mismatch ||
+    (advice.scales || []).length > 0 ||
+    (sequence && sequence.length > 1) ||
+    (advice.specs || []).length > 1;
+  if (!hasAdvice) return plan;
+
+  const showScales = !["efa", "pca", "cfa", "sem", "plssem", "reliability"].includes(plan.analysis);
+  plan.recommendation = {
+    schema: "jasp-bridge/recommendation@1",
+    design: advice.design,
+    why: advice.why,
+    slotSummary: advice.slotSummary || "",
+    alternatives: advice.alternatives || [],
+    warnings: advice.warnings || [],
+    questions: advice.questions || [],
+    scales: showScales ? advice.scales || [] : [],
+    sequence: sequence || undefined,
+    primary_plan_id: extra.primaryId || plan.id,
+  };
+  return plan;
 }
 
 function compatible(variable, kinds) {
@@ -364,12 +399,32 @@ function validateVariables(session, recipe, variables, utterance = "") {
   return { variables: resolved, warnings, questions };
 }
 
-export function buildPlan({ session, utterance = "", analysis, variables = {}, options = {} }) {
+export function buildPlan({
+  session,
+  utterance = "",
+  analysis,
+  variables = {},
+  options = {},
+  advice: providedAdvice,
+  skipPackage = false,
+} = {}) {
   if (!session?.data) {
     throw new Error("当前会话还没有数据，请先调用 jasp_load_data 或 jasp_ingest_data。");
   }
 
-  const recipeKey = analysis || detectRecipe(utterance);
+  const named = analysis || detectNamedMethod(utterance);
+  const advice = providedAdvice || buildAdvice({ session, utterance, analysis: named, variables });
+  const packageMode = !skipPackage && !named && advice.canAdvise;
+
+  let recipeKey = named;
+  const explicit = normalizeVariables(variables);
+  if (!recipeKey && packageMode && advice.primarySpec) {
+    recipeKey = advice.primarySpec.analysis;
+    if (Object.keys(explicit).length === 0 && advice.primarySpec.variables) {
+      Object.assign(explicit, advice.primarySpec.variables);
+    }
+  }
+
   const recipe = getRecipe(recipeKey);
   if (!recipe) {
     throw new Error(
@@ -379,21 +434,25 @@ export function buildPlan({ session, utterance = "", analysis, variables = {}, o
     );
   }
 
-  const explicit = normalizeVariables(variables);
   const detected = autoDetectVariables(utterance, session);
 
-  // 若调用方只给了变量列表而没有角色，按 recipe 的第一个必填角色落入
+  // 若调用方只给了变量列表而没有角色，按顾问建议或第一个必填角色落入
   const merged = { ...explicit };
-  if (Object.keys(merged).length === 0 && detected.length > 0) {
-    const firstRole = Object.entries(recipe.roles).find(([, spec]) => spec.required)?.[0];
-    if (firstRole) merged[firstRole] = detected;
+  if (Object.keys(merged).length === 0) {
+    const hinted = roleAssignments(recipe.key, advice, session);
+    if (Object.keys(hinted).length > 0) {
+      Object.assign(merged, hinted);
+    } else if (detected.length > 0) {
+      const firstRole = Object.entries(recipe.roles).find(([, spec]) => spec.required)?.[0];
+      if (firstRole) {
+        const usable = detectedForRole(recipe, firstRole, detected, session);
+        if (usable.length > 0) merged[firstRole] = usable;
+      }
+    }
   } else {
     for (const [role, spec] of Object.entries(recipe.roles)) {
-      if (merged[role]) continue;
-      const candidates = detected.filter((name) => {
-        const variable = session.data.variables.find((item) => item.name === name);
-        return compatible(variable, spec.kinds);
-      });
+      if (merged[role] || !spec.required) continue;
+      const candidates = detectedForRole(recipe, role, detected, session);
       if (candidates.length > 0 && !Object.values(merged).flat().includes(candidates[0])) {
         merged[role] = [candidates[0]];
       }
@@ -489,7 +548,57 @@ export function buildPlan({ session, utterance = "", analysis, variables = {}, o
       : undefined,
   };
 
-  return plan;
+  const sequence = packageMode
+    ? (advice.specs || []).map((spec) => ({
+        analysis: spec.analysis,
+        summary: spec.summary,
+        role: spec.role,
+        is_primary: spec === advice.primarySpec || spec.analysis === plan.analysis,
+      }))
+    : undefined;
+  return attachRecommendation(plan, advice, { sequence, primaryId: plan.id });
+}
+
+export function buildPlanPackage({ session, utterance = "", analysis, variables = {}, options = {} } = {}) {
+  const named = analysis || detectNamedMethod(utterance);
+  const advice = buildAdvice({ session, utterance, analysis: named, variables });
+  if (named || !advice.canAdvise || !(advice.specs || []).length) {
+    return { primary: buildPlan({ session, utterance, analysis, variables, options, advice, skipPackage: true }), related: [] };
+  }
+
+  const plans = advice.specs.map((spec) => {
+    const plan = buildPlan({
+      session,
+      utterance,
+      analysis: spec.analysis,
+      variables: spec.variables,
+      options,
+      advice,
+      skipPackage: true,
+    });
+    plan.recommendation_role = spec.role;
+    plan.recommendation_summary = spec.summary;
+    return plan;
+  });
+
+  const primary =
+    plans.find((plan) => plan.recommendation_role === "inferential") ||
+    plans.find((plan) => plan.recommendation_role !== "descriptives") ||
+    plans[0];
+  const related = plans.filter((plan) => plan.id !== primary.id);
+  const sequence = plans.map((plan) => ({
+    plan_id: plan.id,
+    analysis: plan.analysis,
+    label: plan.label,
+    status: plan.status,
+    summary: plan.recommendation_summary,
+    role: plan.recommendation_role,
+    is_primary: plan.id === primary.id,
+  }));
+  for (const plan of plans) {
+    attachRecommendation(plan, advice, { sequence, primaryId: primary.id });
+  }
+  return { primary, related, advice };
 }
 
 export function patchPlan({ session, plan, patch = {} }) {
@@ -526,6 +635,29 @@ export function planMarkdown(plan) {
 
   for (const [role, names] of Object.entries(plan.variables)) {
     lines.push(`- ${role}: ${names.join("、")}`);
+  }
+
+  const rec = plan.recommendation;
+  if (rec && (rec.design?.claimed || rec.why || (rec.alternatives || []).length || (rec.sequence || []).length > 1)) {
+    lines.push("", "**方法建议**");
+    if (rec.design?.summary) lines.push(`- 设计：${rec.design.summary}`);
+    if (rec.slotSummary) lines.push(`- 对照表格：${rec.slotSummary}。`);
+    if (rec.why) lines.push(`- 为什么用这个方法：${rec.why}`);
+    for (const item of rec.alternatives || []) lines.push(`- 备选：${item}`);
+  }
+  if ((rec?.sequence || []).length > 1) {
+    lines.push("", "**推荐分析步骤**（请分别确认，不会自动执行）");
+    rec.sequence.forEach((step, index) => {
+      const current = step.is_primary || step.plan_id === plan.id;
+      const idText = step.plan_id ? ` \`${step.plan_id}\`` : "";
+      lines.push(
+        `- ${index + 1}. ${step.summary || step.label || step.analysis}${idText}${current ? "（当前计划）" : ""}`
+      );
+    });
+  }
+  if ((rec?.scales || []).length > 0) {
+    lines.push("", "**量表结构（建议，待确认）**");
+    for (const note of rec.scales) lines.push(`- ${note}`);
   }
 
   if (plan.suggestions?.pending) {

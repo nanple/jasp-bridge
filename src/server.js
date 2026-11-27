@@ -25,7 +25,7 @@ import {
 import { ingestFile, ingestText, profileMarkdown } from "./data/ingest.js";
 import { listRecipes } from "./plan/recipes.js";
 import { buildSnapshot, renderMarkdown } from "./progress/snapshot.js";
-import { buildPlan, patchPlan, planMarkdown } from "./plan/planner.js";
+import { buildPlanPackage, patchPlan, planMarkdown } from "./plan/planner.js";
 import { booleanArg, optionsArg, variableRolesArg } from "./plan/toolArgs.js";
 import { buildRequest, buildTemplate, requestMarkdown } from "./plan/spec.js";
 import {
@@ -495,7 +495,7 @@ server.registerTool(
   {
     title: "生成分析计划",
     description:
-      "由插件根据已加载数据生成可确认的分析计划（建议题项、因子结构、方法与关键选项）。这是分析方案的权威来源：宿主只需把计划展示给用户，不要自行计算、下结论或改用 Python 做旁路分析。用户未指定题项或因子时，插件会检查变量名、前缀和类型并给出建议；建议必须标明为建议，不是已确认的事实。描述统计默认关闭 shapiroWilkTest 与 matrixPlot，宿主不要在用户未要求时打开这两项。状态为 proposed 时请展示计划并等待用户确认，不要自动执行。确认请用 jasp_confirm_plan，修改请用 jasp_update_plan。本工具不执行分析。",
+      "由插件根据已加载数据和用户原话生成可确认的分析计划。这是分析方案的权威来源：宿主只需把计划展示给用户，不要自行计算、下结论或改用 Python 做旁路分析。插件会对照表格核实因变量、实验设计（组内/组间等）和人口学变量，并推荐当前能跑的方法；用户即使只描述实验情景、没有说出方法名，也会给出可确认的建议，而不会自动执行。建议必须标明为建议，不是已确认的事实。若一次建议包含多个步骤（如先描述统计、再做重复测量），会同时生成多份计划，请分别确认。描述统计默认关闭 shapiroWilkTest 与 matrixPlot，宿主不要在用户未要求时打开这两项。状态为 proposed 时请展示计划并等待用户确认。确认请用 jasp_confirm_plan，修改请用 jasp_update_plan。本工具不执行分析。",
     inputSchema: {
       session_id: z.string().describe("会话 ID"),
       utterance: z.string().describe("用户原话，例如「比较男女在抑郁得分上的差异」"),
@@ -534,7 +534,7 @@ server.registerTool(
     const { session, error } = sessionOrFail(session_id);
     if (error) return error;
     try {
-      const plan = buildPlan({
+      const { primary: plan, related } = buildPlanPackage({
         session,
         utterance,
         analysis,
@@ -542,13 +542,18 @@ server.registerTool(
         options: options || {},
       });
       recordPlan(session, plan);
+      for (const sibling of related) recordPlan(session, sibling);
+      const confirmHint =
+        related.length > 0
+          ? "上面可能包含一组相关计划。请分别调用 `jasp_confirm_plan` 确认后再 `jasp_run`，不会自动执行。"
+          : plan.questions.length > 0
+            ? "请把上面的问题补全后调用 `jasp_update_plan`，或确认无误后调用 `jasp_confirm_plan`。"
+            : "请确认计划后调用 `jasp_confirm_plan`，再调用 `jasp_run` 执行。";
       return ok(
         [
           planMarkdown(plan),
           "",
-          plan.questions.length > 0
-            ? "请把上面的问题补全后调用 `jasp_update_plan`，或确认无误后调用 `jasp_confirm_plan`。"
-            : "请确认计划后调用 `jasp_confirm_plan`，再调用 `jasp_run` 执行。",
+          confirmHint,
         ].join("\n")
       );
     } catch (err) {

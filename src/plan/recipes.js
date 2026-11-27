@@ -1666,3 +1666,53 @@ export function detectRecipe(utterance) {
   }
   return best;
 }
+
+// 只认明确的方法名。组内/被试内/重复测量等设计用语交给方法顾问，不在这里直接落成某一个配方。
+const METHOD_NAME_PRIORITY = [
+  [/贝叶斯\s*(中介|调节)|bayesian\s*(process|mediation|moderation)|贝叶斯process/i, "process_bayesian"],
+  [/贝叶斯.{0,16}广义|贝叶斯.{0,8}(二项|泊松|计数|logistic)|bayesian\s*generalized|\bbglmm\b/i, "mixed_bglmm"],
+  [/贝叶斯.{0,12}(线性)?混合|bayesian\s*(linear\s*)?mixed|\bblmm\b/i, "mixed_blmm"],
+  [/\bmimic\b|多重指标多重原因|mimic模型/i, "mimic"],
+  [/潜变量增长|潜增长曲线|潜增长模型|增长曲线模型|latent\s*growth|\blgcm\b/i, "latent_growth"],
+  [/中介|调节|mediation|moderation|hayes|process\s*模型/, "process"],
+  [/验证性因子|cfa\b/, "cfa"],
+  [/探索性因子|efa\b/, "efa"],
+  [/主成分|pca\b/, "pca"],
+  [/偏最小二乘|pls-?sem|plssem/, "plssem"],
+  [/结构方程|sem\b/, "sem"],
+  [/广义线性混合模型|glmm|二项混合|计数混合/, "mixed_glmm"],
+  [/混合模型|随机效应|随机截距|随机斜率|mixed\s*model|lmm\b/, "mixed_lmm"],
+  [/重复测量方差分析|重复测量\s*anova|\brm\s*-?anova\b|repeated\s*measures?\s*(anova|方差分析)?/i, "rm_anova"],
+  [/协方差分析|ancova/, "ancova"],
+  [/配对|paired/, "paired_ttest"],
+];
+
+const DESIGN_ONLY_KEYWORDS = new Set([
+  "被试内",
+  "within-subject",
+  "within subject",
+  "纵向追踪",
+  "多时点",
+  "重复测量",
+]);
+
+export function detectNamedMethod(utterance) {
+  const text = String(utterance || "").toLowerCase();
+  for (const [pattern, key] of METHOD_NAME_PRIORITY) {
+    if (pattern.test(text)) return key;
+  }
+  let best = null;
+  let bestScore = 0;
+  for (const recipe of Object.values(RECIPES)) {
+    let score = 0;
+    for (const keyword of recipe.keywords) {
+      if (DESIGN_ONLY_KEYWORDS.has(keyword) || DESIGN_ONLY_KEYWORDS.has(keyword.toLowerCase())) continue;
+      if (text.includes(keyword.toLowerCase())) score += keyword.length >= 3 ? 2 : 1;
+    }
+    if (score > bestScore) {
+      best = recipe.key;
+      bestScore = score;
+    }
+  }
+  return best;
+}
