@@ -481,7 +481,7 @@ server.registerTool(
         header,
         body,
         "",
-        "`*` 表示必填角色。当前 22 类均已可用：描述统计、信度（α 与 ω）、相关、独立与配对 t 检验、方差分析、协方差分析、重复测量方差分析、回归、Process 与贝叶斯 Process、线性/广义线性混合模型及贝叶斯混合模型、EFA/PCA/CFA、SEM、PLS-SEM、MIMIC、潜变量增长曲线。EFA/PCA 至少需要 3 个观测变量；若用户未指定题项或因子结构，`jasp_plan_analysis` 会根据列名、前缀和类型给出建议方案（明确标为建议，须经 `jasp_confirm_plan` 确认后才执行，也可用 `jasp_update_plan` 修改）。CFA 也可先给建议因子结构，SEM/PLS-SEM 可先给建议测量模型语法；用户仍可显式传入 options.factors / options.models。测量等值、元分析与功效分析尚未封装。",
+        "`*` 表示必填角色。当前 22 类均已可用：描述统计、信度（α 与 ω）、相关、独立与配对 t 检验、方差分析、协方差分析、重复测量方差分析、回归、Process 与贝叶斯 Process、线性/广义线性混合模型及贝叶斯混合模型、EFA/PCA/CFA、SEM、PLS-SEM、MIMIC、潜变量增长曲线。EFA/PCA 至少需要 3 个观测变量；若用户未指定题项或因子结构，`jasp_plan_analysis` 会根据列名、前缀和类型给出建议方案（明确标为建议，须经 `jasp_confirm_plan` 确认后才执行，也可用 `jasp_update_plan` 修改）。CFA 也可先给建议因子结构，SEM/PLS-SEM 可先给建议测量模型语法；用户仍可显式传入 options.factors / options.models。描述统计的 Shapiro-Wilk（shapiroWilkTest）与矩阵散点图（matrixPlot）默认关闭，与官方 JASP 一致；不要在用户未要求时打开。变量数达到或超过 15 个且用户仍要求打开时，计划会提醒可能较慢，但不会取消用户的明确要求。测量等值、元分析与功效分析尚未封装。",
       ].join("\n")
     );
   }
@@ -495,7 +495,7 @@ server.registerTool(
   {
     title: "生成分析计划",
     description:
-      "由插件根据已加载数据生成可确认的分析计划（建议题项、因子结构、方法与关键选项）。这是分析方案的权威来源：宿主只需把计划展示给用户，不要自行计算、下结论或改用 Python 做旁路分析。用户未指定题项或因子时，插件会检查变量名、前缀和类型并给出建议；建议必须标明为建议，不是已确认的事实。状态为 proposed 时请展示计划并等待用户确认，不要自动执行。确认请用 jasp_confirm_plan，修改请用 jasp_update_plan。本工具不执行分析。",
+      "由插件根据已加载数据生成可确认的分析计划（建议题项、因子结构、方法与关键选项）。这是分析方案的权威来源：宿主只需把计划展示给用户，不要自行计算、下结论或改用 Python 做旁路分析。用户未指定题项或因子时，插件会检查变量名、前缀和类型并给出建议；建议必须标明为建议，不是已确认的事实。描述统计默认关闭 shapiroWilkTest 与 matrixPlot，宿主不要在用户未要求时打开这两项。状态为 proposed 时请展示计划并等待用户确认，不要自动执行。确认请用 jasp_confirm_plan，修改请用 jasp_update_plan。本工具不执行分析。",
     inputSchema: {
       session_id: z.string().describe("会话 ID"),
       utterance: z.string().describe("用户原话，例如「比较男女在抑郁得分上的差异」"),
@@ -527,7 +527,7 @@ server.registerTool(
         .optional()
         .describe("显式指定方法；不传则按关键词自动识别"),
       variables: variableRolesArg.optional().describe('变量角色映射，例如 {"dependent":["perf"],"group":["gender"]}'),
-      options: optionsArg.optional().describe("覆盖默认 JASP 选项（高级用法）"),
+      options: optionsArg.optional().describe("覆盖默认 JASP 选项（高级用法）。描述统计请勿默认打开 shapiroWilkTest 或 matrixPlot；仅在用户明确要求正态检验或矩阵散点图时再设为 true。"),
     },
   },
   async ({ session_id, utterance, analysis, variables, options }) => {

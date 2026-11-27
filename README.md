@@ -125,7 +125,7 @@ jaspTools::setupJaspTools()
 
 然后设置 `RSCRIPT` 与 `JASP_RUNTIME`，或在 `mcp.json` 里显式指定。
 
-> 常驻 worker 首次启动需要加载 `jaspTools`，通常 5–10 秒；后续分析约 0.1–6 秒。首次冷启动可能更慢。
+> 常驻 worker 首次启动需要加载 `jaspTools`，通常 5–10 秒；后续分析约 0.1–6 秒。首次冷启动可能更慢。描述统计默认关闭 Shapiro-Wilk 和矩阵散点图；这两项在题项较多时可能拖到数分钟，需要时再打开。
 
 ### 3.3 JASP（CLI 报告模式）
 
@@ -307,6 +307,7 @@ MCP 侧也提供同名工具 `jasp_progress`（`format=markdown|json`），两�
 - 混合模型支持 LMM、GLMM（二项 / Poisson / 高斯等）以及贝叶斯版本（MixedModelsBLMM / MixedModelsBGLMM）和贝叶斯 Process。分组因子必须是每组多观测的 ID 列。贝叶斯分析默认 MCMC 为 3 条链、500 次 burn-in、1000 次抽样，可能需要几分钟。
 - `anova` / `rm_anova` / `regression` 的复杂选项（`modelTerms`、`postHoc`）在不同 JASP 版本间结构可能变化；运行时若报"选项不存在"，按提示在 JASP GUI 核对后固定模板。
 - `jaspTools` 是开发/测试向工具链，内部函数（如 `resultsTables`）可能随版本变化；脚本已做 fallback walker。
+- 描述统计的 `shapiroWilkTest` 与 `matrixPlot` 默认关闭，与官方 JASP 一致。用户或计划显式打开、或对话中明确要求正态检验 / 矩阵散点图时仍会生效。分析变量达到或超过 15 个且仍打开这两项时，计划会提醒可能较慢，但不会取消明确要求。变量很多时建议按分量表分开跑。
 - 一次 `jasp_run` 只执行一个分析；多分析请生成多个计划并依次运行（WorkBuddy 可自动编排）。
 - **Store 版 JASP 的自带 R 位于 `WindowsApps`，受 ACL 限制，不能直接作为 `Rscript` 执行**；`setup_runtime.ps1` 会把它复制到 `~/.workbuddy/jasp-bridge/runtime` 后再使用。若复制失败，可改用独立 R。
 - Store 版 0.99.10 的 `--report` 不支持替换数据目录；`jasp_run_template` 的 `data_dir` 参数目前仅作兼容保留。
@@ -321,6 +322,7 @@ MCP 侧也提供同名工具 `jasp_progress`（`format=markdown|json`），两�
 | Store 版已安装但未识别 | 运行 `npm run status`；插件会通过 `Get-AppxPackage` 探测 `JASPDesktop.exe`，也可手动指定 `JASP_PATH` |
 | `jaspTools: 未安装` | 按 3.2 安装**独立 R**；Store 版自带 R 不能被外部调用 |
 | `jasp_run` 返回 dry-run | 正常降级：R 未就绪。安装后重跑 |
+| 描述统计很慢 | 默认已关闭 Shapiro-Wilk 与矩阵散点图。若显式打开且变量数 ≥ 15，计划会提醒可能较慢；可关掉这两项或按分量表分开跑 |
 | `选项不存在` | 用 `jasp_export(format=request)` 看实际请求，在 JASP GUI 核对键名；或用 `jaspTools::analysisOptions("分析名")` 列默认键 |
 | 中文变量名异常 | 确保 CSV 为 UTF-8；JASP 侧列名大小写敏感 |
 | 模板报告无输出 | 确认 `report.complete`/`report.pdf`；不要同时传 `--hide` 与 `--noSandbox`；也可先手动跑一次 `JASPDesktop.exe --help` |

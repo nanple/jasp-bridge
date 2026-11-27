@@ -5,7 +5,8 @@ import os from "node:os";
 import path from "node:path";
 
 import { ingestText, profileMarkdown } from "../src/data/ingest.js";
-import { buildPlan, patchPlan } from "../src/plan/planner.js";
+import { buildPlan, patchPlan, planMarkdown } from "../src/plan/planner.js";
+import { DESCRIPTIVES_HEAVY_VARIABLE_THRESHOLD } from "../src/plan/recipes.js";
 import { buildRequest, buildTemplate } from "../src/plan/spec.js";
 
 const CSV = `id,gender,edu,age,sat1,sat2,sat3,perf
@@ -72,15 +73,131 @@ test("planner: 描述统计计划与请求生成", () => {
   assert.equal(plan.jasp.analysis, "Descriptives");
   assert.equal(plan.status, "proposed");
   assert.deepEqual(plan.options.variables, ["age", "perf"]);
+  assert.equal(plan.options.shapiroWilkTest, false);
+  assert.equal(plan.options.matrixPlot, false);
+  assert.equal(plan.warnings.some((warning) => warning.includes("Shapiro-Wilk") || warning.includes("matrixPlot")), false);
 
   const request = buildRequest(plan);
   assert.equal(request.name, "Descriptives");
   assert.deepEqual(request.options.variables, ["age", "perf"]);
+  assert.equal(request.options.shapiroWilkTest, false);
+  assert.equal(request.options.matrixPlot, false);
   assert.equal(request.seed, 1);
 
   const template = buildTemplate(plan);
   assert.equal(template.schema, "jasp-bridge/template@1");
   assert.equal(template.analyses[0].name, "Descriptives");
+});
+
+function wideDescriptivesFixture(variableCount) {
+  const names = Array.from({ length: variableCount }, (_, index) => `item${index + 1}`);
+  const header = ["id", ...names].join(",");
+  const rows = [];
+  for (let row = 1; row <= 8; row += 1) {
+    rows.push([row, ...names.map((_, index) => ((row + index) % 5) + 1)].join(","));
+  }
+  const csv = `${header}\n${rows.join("\n")}\n`;
+  const outDir = fs.mkdtempSync(path.join(os.tmpdir(), "jasp-bridge-wide-"));
+  const types = Object.fromEntries(names.map((name) => [name, "ordinal"]));
+  const data = ingestText(csv, { outDir, name: "wide", types });
+  return { outDir, session: { id: "s_wide", data }, names };
+}
+
+test("planner: 描述统计显式打开 Shapiro 与矩阵图时仍然生效", () => {
+  const { session } = fixture();
+  const plan = buildPlan({
+    session,
+    utterance: "对年龄和绩效做描述统计",
+    analysis: "descriptives",
+    variables: { variables: ["age", "perf"] },
+    options: { shapiroWilkTest: true, matrixPlot: true },
+  });
+  assert.equal(plan.options.shapiroWilkTest, true);
+  assert.equal(plan.options.matrixPlot, true);
+  assert.equal(plan.warnings.some((warning) => warning.includes("可能")), false);
+
+  const request = buildRequest(plan);
+  assert.equal(request.options.shapiroWilkTest, true);
+  assert.equal(request.options.matrixPlot, true);
+});
+
+test("planner: 对话明确要求正态检验或矩阵散点图时打开对应选项", () => {
+  const { session } = fixture();
+  const shapiroPlan = buildPlan({
+    session,
+    utterance: "对年龄和绩效做描述统计，并看正态性",
+    analysis: "descriptives",
+    variables: { variables: ["age", "perf"] },
+  });
+  assert.equal(shapiroPlan.options.shapiroWilkTest, true);
+  assert.equal(shapiroPlan.options.matrixPlot, false);
+
+  const plotPlan = buildPlan({
+    session,
+    utterance: "对年龄和绩效做描述统计，画矩阵散点图",
+    analysis: "descriptives",
+    variables: { variables: ["age", "perf"] },
+  });
+  assert.equal(plotPlan.options.shapiroWilkTest, false);
+  assert.equal(plotPlan.options.matrixPlot, true);
+});
+
+test("planner: 变量达到 15 个且显式打开耗时选项时保留选择并提醒", () => {
+  assert.equal(DESCRIPTIVES_HEAVY_VARIABLE_THRESHOLD, 15);
+  const { session, names } = wideDescriptivesFixture(DESCRIPTIVES_HEAVY_VARIABLE_THRESHOLD);
+  const plan = buildPlan({
+    session,
+    utterance: "对这些题项做描述统计",
+    analysis: "descriptives",
+    variables: { variables: names },
+    options: { shapiroWilkTest: true, matrixPlot: true },
+  });
+  assert.equal(plan.options.shapiroWilkTest, true);
+  assert.equal(plan.options.matrixPlot, true);
+  assert.equal(plan.options.variables.length, 15);
+  assert.ok(plan.warnings.some((warning) => warning.includes("Shapiro-Wilk") && warning.includes("15")));
+  assert.ok(plan.warnings.some((warning) => warning.includes("matrixPlot") && warning.includes("15")));
+
+  const markdown = planMarkdown(plan);
+  assert.match(markdown, /Shapiro-Wilk/);
+  assert.match(markdown, /matrixPlot/);
+
+  const request = buildRequest(plan);
+  assert.equal(request.options.shapiroWilkTest, true);
+  assert.equal(request.options.matrixPlot, true);
+  assert.deepEqual(request.options.variables, names);
+});
+
+test("planner: 变量少于 15 个时即使打开耗时选项也不提醒", () => {
+  const { session, names } = wideDescriptivesFixture(DESCRIPTIVES_HEAVY_VARIABLE_THRESHOLD - 1);
+  const plan = buildPlan({
+    session,
+    utterance: "对这些题项做描述统计",
+    analysis: "descriptives",
+    variables: { variables: names },
+    options: { shapiroWilkTest: true, matrixPlot: true },
+  });
+  assert.equal(names.length, 14);
+  assert.equal(plan.options.shapiroWilkTest, true);
+  assert.equal(plan.options.matrixPlot, true);
+  assert.equal(plan.warnings.some((warning) => warning.includes("Shapiro-Wilk") || warning.includes("matrixPlot")), false);
+});
+
+test("planner: 变量很多但未显式打开耗时选项时保持默认关闭且不提醒", () => {
+  const { session, names } = wideDescriptivesFixture(20);
+  const plan = buildPlan({
+    session,
+    utterance: "对这些题项做描述统计",
+    analysis: "descriptives",
+    variables: { variables: names },
+  });
+  assert.equal(plan.options.shapiroWilkTest, false);
+  assert.equal(plan.options.matrixPlot, false);
+  assert.equal(plan.warnings.some((warning) => warning.includes("Shapiro-Wilk") || warning.includes("matrixPlot")), false);
+
+  const request = buildRequest(plan);
+  assert.equal(request.options.shapiroWilkTest, false);
+  assert.equal(request.options.matrixPlot, false);
 });
 
 test("planner: t 检验缺分组变量时追问", () => {

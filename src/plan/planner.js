@@ -463,6 +463,13 @@ export function buildPlan({ session, utterance = "", analysis, variables = {}, o
     warnings: [
       ...validation.warnings,
       ...(suggestion.applied ? suggestionWarning(suggestion) : []),
+      ...(typeof recipe.optionWarnings === "function"
+        ? recipe.optionWarnings(planOptions, {
+            session,
+            utterance,
+            variables: validation.variables,
+          })
+        : []),
       ...(recipe.beta
         ? [`「${recipe.label}」在 P0 标记为 beta：若 JASP 报选项错误，请用 jasp_export 导出模板后在 JASP 中固定一次。`]
         : []),

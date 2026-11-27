@@ -363,6 +363,49 @@ function pickFactorCount(utterance, n) {
   return Math.min(n, Math.max(2, Math.round(Math.sqrt(n))));
 }
 
+// 描述统计里 Shapiro-Wilk / 矩阵散点图开始提醒的变量数阈值。
+// 官方 JASP 这两项默认关闭。矩阵散点图会生成 p(p-1)/2 张成对散点图：
+// 15 个变量即 105 张图；一次放入约 40 道题时可能需要数分钟。
+// 心理量表单个分量表也常见不超过 15 题，因此以 15 作为提醒阈值。
+export const DESCRIPTIVES_HEAVY_VARIABLE_THRESHOLD = 15;
+
+const SHAPIRO_WILK_HINT = /shapiro|夏皮罗|正态性|正态检验|正态分布检验|normality\s*test/i;
+const MATRIX_PLOT_HINT = /matrix\s*-?plot|矩阵散点|散点图矩阵|矩阵图|散点图/i;
+
+export function wantsShapiroWilk(utterance) {
+  return SHAPIRO_WILK_HINT.test(String(utterance || ""));
+}
+
+export function wantsMatrixPlot(utterance) {
+  return MATRIX_PLOT_HINT.test(String(utterance || ""));
+}
+
+export function descriptivesVariableCount(options = {}, variables = {}) {
+  const fromOptions = options.variables;
+  if (Array.isArray(fromOptions) && fromOptions.length > 0) return fromOptions.length;
+  const fromRoles = variables.variables;
+  if (Array.isArray(fromRoles) && fromRoles.length > 0) return fromRoles.length;
+  return 0;
+}
+
+export function descriptivesHeavyOptionWarnings(options = {}, context = {}) {
+  const count = descriptivesVariableCount(options, context.variables);
+  if (count < DESCRIPTIVES_HEAVY_VARIABLE_THRESHOLD) return [];
+  const warnings = [];
+  const threshold = DESCRIPTIVES_HEAVY_VARIABLE_THRESHOLD;
+  if (options.shapiroWilkTest) {
+    warnings.push(
+      `已按你的要求打开 Shapiro-Wilk 正态检验，但当前分析有 ${count} 个变量（达到或超过 ${threshold} 个时可能明显变慢）。如需加快，可关掉 shapiroWilkTest，或按分量表分开跑。`
+    );
+  }
+  if (options.matrixPlot) {
+    warnings.push(
+      `已按你的要求打开矩阵散点图（matrixPlot），但当前分析有 ${count} 个变量（达到或超过 ${threshold} 个时，成对散点图数量会按变量数平方增长，可能需要数分钟）。不会取消你的明确要求；如需加快，可关掉 matrixPlot，或减少一次分析的变量数。`
+    );
+  }
+  return warnings;
+}
+
 export const RECIPES = {
   descriptives: {
     key: "descriptives",
@@ -373,7 +416,8 @@ export const RECIPES = {
       variables: { required: true, min: 1, kinds: ["scale", "ordinal"], label: "分析变量" },
       splitBy: { required: false, max: 1, kinds: ["nominal"], label: "分组变量" },
     },
-    buildOptions(vars) {
+    buildOptions(vars, context = {}) {
+      const utterance = context.utterance || "";
       return {
         variables: vars.variables,
         ...(vars.splitBy ? { splitBy: first(vars.splitBy) } : {}),
@@ -387,11 +431,16 @@ export const RECIPES = {
         quartiles: true,
         skewness: true,
         kurtosis: true,
-        shapiroWilkTest: true,
-        matrixPlot: true,
+        // 与官方 JASP 一致：这两项默认关闭。题项较多时（尤其是矩阵散点图）会明显变慢。
+        // 用户在选项里显式打开，或在对话中明确要求正态检验 / 矩阵散点图时，仍然打开。
+        shapiroWilkTest: wantsShapiroWilk(utterance),
+        matrixPlot: wantsMatrixPlot(utterance),
       };
     },
-    apaHint: "报告 M、SD、偏度与样本量；若做参数检验，先看正态性。",
+    optionWarnings(options, context) {
+      return descriptivesHeavyOptionWarnings(options, context);
+    },
+    apaHint: "报告 M、SD、偏度与样本量；若做参数检验，可再打开 Shapiro-Wilk 看正态性。",
   },
 
   reliability: {
