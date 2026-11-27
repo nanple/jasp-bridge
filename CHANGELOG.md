@@ -2,7 +2,11 @@
 
 ## Unreleased
 
-### 功能
+## 0.3.1 - 2026-11-27
+
+把已在 main 上的两项改动做成正式发布：MCP 宿主参数类型强制修复，以及 Excel / SPSS 数据文件直接读取。分析类型仍为 **22 类**，版本号是 **0.3.1**，不是 3.0.0。
+
+### 数据读入
 
 - 可以直接加载 Excel（`.xlsx` / `.xls` / `.xlsm`）和 SPSS（`.sav`）数据文件，与原有 CSV / TSV / JSON 走同一套变量字典、类型推断、计划和分析流程。
 - 多工作表 Excel 默认读取第一张表；`jasp_load_data` 增加 `sheet` 参数，可按表名或从 1 开始的序号指定。找不到表、第一张表为空时，会列出可用工作表。
@@ -13,6 +17,10 @@
 ### 修复
 
 - 部分 MCP 宿主会把字符串数组改写成 `{"0":"a","1":"b"}` 这类对象，并把布尔值传成 `"true"` / `"false"` 字符串。`jasp_plan_analysis` / `jasp_update_plan` 的变量参数会因此在校验阶段报 “expected array”，而选项里的 `"false"` 会原样进入 JASP，触发 `!optionToCheck: invalid argument type` 致命错误。现已在参数校验前和写入引擎请求前把这两类值还原。
+
+### 文档与发布
+
+- GitHub Release `v0.3.1` 提供含 Windows `node.exe` 的便携 zip 与 `latest.json`（不含 JASP 运行时）。
 
 
 ## 0.3.0 - 2026-11-26

@@ -1,10 +1,10 @@
 {
   "schema": "jasp-bridge/progress@1",
-  "updated_at": "2026-11-26T11:10:00.000Z",
-  "version": "0.3.0",
-  "phase": "0.3.0：类型推断与可确认分析方案",
-  "status": "unreleased_changes",
-  "summary": "在 0.3.0 之上（含未发版的 MCP 类型强制修复）增加了 Excel（.xlsx/.xls/.xlsm）和 SPSS（.sav）数据读入。读入后仍走同一套变量字典、类型推断、计划与分析流程；CSV/TSV/JSON 行为不变。尚未推送、打 tag 或同步到 WorkBuddy 安装目录。测量等值、元分析、功效分析、APA 表格、图中可读变量名、更稳定打开 .jasp 仍属后续 3.0 工作。",
+  "updated_at": "2026-11-27T02:00:00.000Z",
+  "version": "0.3.1",
+  "phase": "0.3.1：Excel/SPSS 读入与 MCP 参数修复",
+  "status": "ready_to_release",
+  "summary": "0.3.1 正式发布已推送到 main 的两项改动：可直接读取 Excel（.xlsx/.xls/.xlsm）和 SPSS（.sav），以及 MCP 宿主把数组/布尔值改写后的参数强制修复。22 类分析能力与 0.3.0 相同。测量等值、元分析、功效分析、APA 表格、图中可读变量名、更稳定打开 .jasp 仍属后续 3.0 工作。",
   "completed": [
     "重复测量 ANOVA（球形检验、GG 校正、混合设计、事后比较）",
     "ANOVA 事后比较（Tukey/Holm/Bonferroni/Scheffé/Šidák/FDR）",
@@ -32,7 +32,8 @@
     "类型推断：不再仅凭唯一值把数值列判成 ordinal；均分等带小数的连续分数为 scale，1–5/1–7 题项仍为 ordinal",
     "可确认分析方案：未指定题项或因子时，根据列名、前缀和类型提出建议，标明为建议，确认前不执行",
     "宿主提示词与工具说明加强：宿主只转发和展示插件结果，不要自行计算或改用 Python 做旁路分析",
-    "Excel（.xlsx/.xls/.xlsm）与 SPSS（.sav）直接读取：多表可选，保留 .sav 标签与 measure 类型"
+    "Excel（.xlsx/.xls/.xlsm）与 SPSS（.sav）直接读取：多表可选，保留 .sav 标签与 measure 类型",
+    "MCP 宿主字符串数组与布尔值强制还原（计划校验与写入引擎前）"
   ],
   "next": [
     "测量等值",
@@ -87,7 +88,12 @@
     },
     {
       "id": "t_excel_sav_ingest",
-      "content": "Excel（.xlsx/.xls）与 SPSS（.sav）读入已在源码中实现并通过测试；尚未发版或同步 WorkBuddy",
+      "content": "Excel（.xlsx/.xls）与 SPSS（.sav）读入已纳入 0.3.1 正式发布",
+      "status": "completed"
+    },
+    {
+      "id": "t_031_release",
+      "content": "发布 0.3.1 到 https://github.com/nanple/jasp-bridge/releases/tag/v0.3.1",
       "status": "completed"
     }
   ],
@@ -95,7 +101,7 @@
     "smoke": "npm run smoke",
     "status": "npm run status",
     "progress": "npm run progress",
-    "build": ".\\build-release.ps1 -Version 0.3.0 -IncludeNode"
+    "build": ".\\build-release.ps1 -Version 0.3.1 -IncludeNode"
   },
   "paths": {
     "recipes": "src/plan/recipes.js",

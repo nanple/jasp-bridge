@@ -1,4 +1,4 @@
-JASP-Bridge 0.3.0 安装说明（2026-11-26）
+JASP-Bridge 0.3.1 安装说明（2026-11-27）
 
 这是文档和便携安装包。WorkBuddy 实际加载的是：
 %USERPROFILE%\.workbuddy\jasp-bridge
@@ -9,14 +9,14 @@ JASP-Bridge 0.3.0 安装说明（2026-11-26）
 若未指定题项或因子，插件会按列名和前缀给出建议方案，标明为建议，确认后才执行。数据可直接加载 CSV / Excel（.xlsx .xls） / SPSS（.sav）。
 回归、配对 t、ANCOVA、ANOVA 仍标 beta。
 
-官方便携包 jasp-bridge-0.3.0-portable.zip 约 39 MB，含插件代码、依赖、文档、示例
+官方便携包 jasp-bridge-0.3.1-portable.zip 约 41 MB，含插件代码、依赖、文档、示例
 和 Windows node.exe，不含约 1.7 GB 的 JASP 运行时（安装时从本机 JASP 复制）。
 
 源码与发布：https://github.com/nanple/jasp-bridge
-便携包下载：https://github.com/nanple/jasp-bridge/releases/download/v0.3.0/jasp-bridge-0.3.0-portable.zip
+便携包下载：https://github.com/nanple/jasp-bridge/releases/download/v0.3.1/jasp-bridge-0.3.1-portable.zip
 
 最简版（推荐先试）：
-把 jasp-bridge-0.3.0-portable.zip 拖进 WorkBuddy 对话框，发送：
+把 jasp-bridge-0.3.1-portable.zip 拖进 WorkBuddy 对话框，发送：
 "这是我下载的 JASP-Bridge 安装包。请帮我解压、检查本机 JASP、运行 install.ps1 安装，完成后告诉我怎么验证。不要覆盖已有的 runtime 和 sessions。"
 
 如果 WorkBuddy 不能执行本地命令，再按下面手动安装。
@@ -35,7 +35,7 @@ JASP-Bridge 0.3.0 安装说明（2026-11-26）
 - 日常分析不需要访问 GitHub；运行时从本机 JASP 复制
 
 手动安装：
-1. 解压 jasp-bridge-0.3.0-portable.zip
+1. 解压 jasp-bridge-0.3.1-portable.zip
 2. 在解压后的文件夹空白处 Shift + 右键，选择"在终端中打开"
 3. 运行：
    powershell -ExecutionPolicy Bypass -File .\install.ps1

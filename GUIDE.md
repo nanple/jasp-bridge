@@ -1,6 +1,6 @@
 # JASP-Bridge 实用指南
 
-版本：0.3.0（2026-11-26）  
+版本：0.3.1（2026-11-27）  
 适用：WorkBuddy + 本机 JASP（Windows 10/11 64 位）
 
 > 图文版：浏览器打开 `docs/visual-guide.html`，或直接看 `docs/visual-guide.pdf`。
@@ -54,7 +54,7 @@ JASP-Bridge 是一个 WorkBuddy 的 MCP 插件。它把自然语言请求整理�
 
 ### 4.1 超级简单版：把安装包直接发给 WorkBuddy
 
-如果你的 WorkBuddy 版本允许执行本地命令或文件操作，可以把 `jasp-bridge-0.3.0-portable.zip` 拖进对话框，然后发：
+如果你的 WorkBuddy 版本允许执行本地命令或文件操作，可以把 `jasp-bridge-0.3.1-portable.zip` 拖进对话框，然后发：
 
 ```text
 这是我下载的 JASP-Bridge 安装包。请帮我：
@@ -133,10 +133,10 @@ powershell -ExecutionPolicy Bypass -File .\install.ps1
 
 ### 4.6 便携包里有什么、没有什么
 
-官方 `jasp-bridge-0.3.0-portable.zip` 约 39 MB，内含插件代码、`node_modules`、文档、示例和 Windows `node.exe`。**不包含**约 1.7 GB 的 JASP 运行时（安装时由 `install.ps1` 从本机 JASP 复制）。
+官方 `jasp-bridge-0.3.1-portable.zip` 约 41 MB，内含插件代码、`node_modules`、文档、示例和 Windows `node.exe`。**不包含**约 1.7 GB 的 JASP 运行时（安装时由 `install.ps1` 从本机 JASP 复制）。
 
 - 仓库：https://github.com/nanple/jasp-bridge
-- 便携包：https://github.com/nanple/jasp-bridge/releases/download/v0.3.0/jasp-bridge-0.3.0-portable.zip
+- 便携包：https://github.com/nanple/jasp-bridge/releases/download/v0.3.1/jasp-bridge-0.3.1-portable.zip
 - 更新清单：https://github.com/nanple/jasp-bridge/releases/latest/download/latest.json
 
 ---
@@ -564,7 +564,7 @@ $HOME\.workbuddy\mcp.json
 
 ## 15. 版本与路线图
 
-- **当前（0.3.0）**：在 0.2.0 的 22 类分析之上，修正了量表均分被误判为有序的问题；未指定题项或因子时，插件会给出可确认的建议方案。表、图和 `.jasp` 由 JASP 引擎产生，宿主只负责展示。其中回归、配对 t、ANCOVA、ANOVA 仍标 beta。
+- **当前（0.3.1）**：在 0.3.0 的类型推断与可确认分析方案之上，可直接读取 Excel（`.xlsx` / `.xls`）和 SPSS（`.sav`）；并修复部分 MCP 宿主改写数组/布尔参数的问题。表、图和 `.jasp` 由 JASP 引擎产生，宿主只负责展示。其中回归、配对 t、ANCOVA、ANOVA 仍标 beta。
 - **下一步（3.0 仍未做部分）**：测量等值、元分析、功效分析、更接近 APA 的表格、图中使用可读变量名、更稳定地打开 `.jasp`；以及把缺失值策略（FIML / 多重插补）扩展到更多分析。
 
 ---
