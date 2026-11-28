@@ -1,6 +1,6 @@
 # 不用 WorkBuddy，能用 DeepSeek / 豆包吗？
 
-版本：0.3.4  
+版本：0.3.5  
 适用：Windows 10/11，已安装 JASP
 
 > 图文版：浏览器打开 `docs/visual-guide.html`，或直接看 `docs/visual-guide.pdf`。

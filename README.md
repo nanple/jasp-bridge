@@ -2,7 +2,7 @@
 
 以 **WorkBuddy 为对话入口**、**JASP 为统计引擎**的 MCP 插件。用户在 WorkBuddy 里用自然语言提需求，插件把需求整理成可确认的分析计划，再调用本机 JASP/R 执行，最后把结果以 Markdown 表格 + APA 报告提示返回对话。
 
-> 当前状态（0.3.4，2026-11-27）：**22 类**可运行分析，**16 个** MCP 工具。本版提高对实验描述和数据列的可识别度，不是新方法包。可以说「组内」等设计用语，并用「反应时」等口语对上 `rt` 这类列名；未点名方法时，插件会对照已加载的表格给出可确认的建议，说明理由和备选，并在说法与数据对不上时提醒。量表总分只作为建议，不会自动计算或反向计分。多因素组内设计目前仍不能跑。生成的 `.jasp` 会把结果表中的编码列名（`jaspColumnN`）还原为原始变量名，并写入变量标题与 SPSS 值标签。描述统计默认关闭 Shapiro-Wilk 与矩阵散点图；用户明确要求时仍可打开。可直接加载 Excel（`.xlsx` / `.xls`）和 SPSS（`.sav`）。统计数字、表、图和 `.jasp` 只由本机 JASP 引擎产生，宿主只负责转发和展示。其中 `RegressionLinear`、配对 t、ANCOVA、ANOVA 仍标 beta。本机没有 R/jaspTools 时会进入 **dry-run**，只生成可复现工件，不产生统计数字。
+> 当前状态（0.3.5，2026-11-28）：**22 类**可运行分析，**16 个** MCP 工具。本版不是新方法包。只有数据、还不清楚实验设计时，也会先给出描述统计，并列出几种说得通、需确认后才执行的候选方法。同时修复了 Windows 上相关/回归的非法正则、把「每人一行」的宽表误判成长格式，以及描述统计表出现 `[object Object]` 的问题。可以说「组内」等设计用语，并用「反应时」等口语对上 `rt` 这类列名；未点名方法时，插件会对照已加载的表格给出可确认的建议。量表总分只作为建议，不会自动计算或反向计分。多因素组内设计目前仍不能跑。生成的 `.jasp` 会把结果表中的编码列名（`jaspColumnN`）还原为原始变量名，并写入变量标题与 SPSS 值标签。描述统计默认关闭 Shapiro-Wilk 与矩阵散点图；用户明确要求时仍可打开。可直接加载 Excel（`.xlsx` / `.xls`）和 SPSS（`.sav`）。统计数字、表、图和 `.jasp` 只由本机 JASP 引擎产生，宿主只负责转发和展示。其中 `RegressionLinear`、配对 t、ANCOVA、ANOVA 仍标 beta。本机没有 R/jaspTools 时会进入 **dry-run**，只生成可复现工件，不产生统计数字。
 >
 > 源码与 Release：https://github.com/nanple/jasp-bridge
 > 随包实用指南见 [GUIDE.md](GUIDE.md)，图文版见 `docs/visual-guide.pdf`，示例数据在 `examples/demo.csv`、`examples/factor-demo.csv`、`examples/mixed-demo.csv`。
@@ -81,7 +81,7 @@ JASP 免费开源，结果随选项即时更新，假设检验与效应量同时
 
 ### 3.1 一键安装（推荐，方案 B）
 
-从 GitHub Release 下载官方便携包 [jasp-bridge-0.3.4-portable.zip](https://github.com/nanple/jasp-bridge/releases/download/v0.3.4/jasp-bridge-0.3.4-portable.zip)，解压后在该目录运行：
+从 GitHub Release 下载官方便携包 [jasp-bridge-0.3.5-portable.zip](https://github.com/nanple/jasp-bridge/releases/download/v0.3.5/jasp-bridge-0.3.5-portable.zip)，解压后在该目录运行：
 
 ```powershell
 powershell -ExecutionPolicy Bypass -File .\install.ps1
@@ -333,7 +333,7 @@ MCP 侧也提供同名工具 `jasp_progress`（`format=markdown|json`），两�
 
 ## 10. 路线图
 
-- **当前（0.3.4）**：提高对实验描述和数据列的可识别度（组内/组间等设计用语、口语别名对列名、未点名方法时的可确认建议，以及理由、备选和不一致提醒）。仍为 22 类分析、16 个 MCP 工具，不是新方法包。量表总分只作为建议，不会自动计算；多因素组内设计目前仍不能跑。0.3.3 已让生成的 `.jasp` 把结果表中的编码列名还原为原始变量名，并写入变量标题与值标签。0.3.2 已将描述统计的 Shapiro-Wilk 与矩阵散点图改为默认关闭。0.3.1 已支持直接读取 Excel 和 SPSS。宿主应展示插件返回的表、图和 `.jasp`，不要自行计算。
+- **当前（0.3.5）**：只有数据、不清楚实验设计时，也会先给出描述统计和可确认的候选方法。同时修复了 Windows 上相关/回归的非法正则、把「每人一行」的宽表误判成长格式，以及描述统计表出现 `[object Object]` 的问题。仍为 22 类分析、16 个 MCP 工具，不是新方法包。0.3.4 已提高对实验描述和数据列的可识别度（组内/组间等设计用语、口语别名对列名、未点名方法时的可确认建议）。量表总分只作为建议，不会自动计算；多因素组内设计目前仍不能跑。0.3.3 已让生成的 `.jasp` 把结果表中的编码列名还原为原始变量名，并写入变量标题与值标签。0.3.2 已将描述统计的 Shapiro-Wilk 与矩阵散点图改为默认关闭。0.3.1 已支持直接读取 Excel 和 SPSS。宿主应展示插件返回的表、图和 `.jasp`，不要自行计算。
 - **下一步（3.0 仍未做部分）**：测量等值、元分析、功效分析、更接近 APA 的表格、更稳定地打开 `.jasp` 文件；已经画进 PNG 的图若仍显示编码名，可在 JASP 中 Refresh。以及更完整的缺失值策略（FIML）。
 
 ---
@@ -355,16 +355,16 @@ npm start        # 以 stdio 启动 MCP 服务（通常由 WorkBuddy 拉起）
 **A. 便携 zip（推荐给普通用户，方案 B）**
 
 ```powershell
-.\build-release.ps1 -Version 0.3.4 -IncludeNode
+.\build-release.ps1 -Version 0.3.5 -IncludeNode
 ```
 
 生成：
 
 ```text
-dist/jasp-bridge-0.3.4-portable.zip
+dist/jasp-bridge-0.3.5-portable.zip
 ```
 
-官方 0.3.4 便携包约 41 MB，内含 `node_modules`、`src`、`scripts`、文档、示例和 Windows `node.exe`，**不**包含约 1.7 GB 的 JASP 运行时。运行时在安装时从用户本机 JASP 复制。不加 `-IncludeNode` 时体积约 5.5 MB，安装后需使用系统或 WorkBuddy 已有的 Node。
+官方 0.3.5 便携包约 41 MB，内含 `node_modules`、`src`、`scripts`、文档、示例和 Windows `node.exe`，**不**包含约 1.7 GB 的 JASP 运行时。运行时在安装时从用户本机 JASP 复制。不加 `-IncludeNode` 时体积约 5.5 MB，安装后需使用系统或 WorkBuddy 已有的 Node。
 
 **B. npm 包（给开发者，目前未发布）**
 
@@ -373,7 +373,7 @@ dist/jasp-bridge-0.3.4-portable.zip
 **C. 公开下载地址**
 
 - 仓库：https://github.com/nanple/jasp-bridge
-- 便携包：https://github.com/nanple/jasp-bridge/releases/download/v0.3.4/jasp-bridge-0.3.4-portable.zip
+- 便携包：https://github.com/nanple/jasp-bridge/releases/download/v0.3.5/jasp-bridge-0.3.5-portable.zip
 - 更新清单 `latest.json`：https://github.com/nanple/jasp-bridge/releases/latest/download/latest.json
 
 ### 11.2 国内网络方案
@@ -418,8 +418,8 @@ dist/jasp-bridge-0.3.4-portable.zip
 
 ```json
 {
-  "version": "0.3.4",
-  "url": "https://.../jasp-bridge-0.3.4-portable.zip",
+  "version": "0.3.5",
+  "url": "https://.../jasp-bridge-0.3.5-portable.zip",
   "sha256": "<64 位十六进制>",
   "notes": "更新说明",
   "runtime_required": false,
@@ -454,7 +454,7 @@ dist/jasp-bridge-0.3.4-portable.zip
 
 ```powershell
 powershell -ExecutionPolicy Bypass -File "$HOME\.workbuddy\jasp-bridge\update.ps1" `
-  -PackageDir "$HOME\.workbuddy\jasp-bridge\updates\0.3.4\package" `
+  -PackageDir "$HOME\.workbuddy\jasp-bridge\updates\0.3.5\package" `
   -InstallDir "$HOME\.workbuddy\jasp-bridge"
 ```
 

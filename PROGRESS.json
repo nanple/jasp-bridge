@@ -1,10 +1,10 @@
 {
   "schema": "jasp-bridge/progress@1",
-  "updated_at": "2026-11-28T02:15:00.000Z",
-  "version": "0.3.4",
-  "phase": "0.3.4：方法顾问（识别与选型）",
+  "updated_at": "2026-11-28T02:25:00.000Z",
+  "version": "0.3.5",
+  "phase": "0.3.5：方法顾问补强与三项修复",
   "status": "released",
-  "summary": "0.3.4 正式发布：提高对实验描述和数据列的可识别度。插件会对照已加载表格核实因变量、实验设计（组内/组间等）和人口学变量；可用「反应时」等口语对上 rt 这类列名；未点名方法时给出可确认的建议，并说明理由、备选，以及说法和表格对不上时的提醒。量表总分只作为建议，不会自动计算。仍为 22 类分析、16 个 MCP 工具，不是新方法包。多因素组内设计目前仍不能跑。测量等值、元分析、功效分析、APA 表格、更稳定打开 .jasp 仍属后续 3.0 工作。",
+  "summary": "0.3.5 正式发布：只有数据、不清楚实验设计时，也会先给出描述统计和可确认的候选方法。同时修复 Windows 上相关/回归的非法正则、把「每人一行」的宽表误判成长格式，以及描述统计表出现 [object Object] 的问题。仍为 22 类分析、16 个 MCP 工具，不是新方法包。多因素组内设计目前仍不能跑。测量等值、元分析、功效分析、APA 表格、更稳定打开 .jasp 仍属后续 3.0 工作。",
   "completed": [
     "重复测量 ANOVA（球形检验、GG 校正、混合设计、事后比较）",
     "ANOVA 事后比较（Tukey/Holm/Bonferroni/Scheffé/Šidák/FDR）",
@@ -38,12 +38,13 @@
     "生成的 .jasp 还原原始变量名（查看器结果与 jaspResults），并写入变量标题与 SPSS 值标签",
     "方法顾问：对照已加载表格核实因变量、设计与人口学变量，未点名方法时给出可确认的建议方案（0.3.4）",
     "方法顾问（未发布）：只有数据、未说明实验设计时，先根据表格给出描述统计，并列出几种说得通的候选方法供确认，不再报「无法识别分析类型」。",
-    "本地修复（未发布）：Windows TRE 非法正则、宽表被 levels 预览误判为长格式、描述统计表出现 [object Object]。"
+    "本地修复（未发布）：Windows TRE 非法正则、宽表被 levels 预览误判为长格式、描述统计表出现 [object Object]。",
+    "方法顾问：只有数据、未说明设计时先给出描述统计和可确认的候选方法（0.3.5）",
+    "修复 Windows 上 jb_escape_regex 被 TRE 判定为非法正则的问题（0.3.5）",
+    "设计判断改用真实唯一值数量，避免宽表被 levels 预览误判为长格式（0.3.5）",
+    "描述统计 Markdown/CSV 将嵌套单元格平铺为可读数值，不再显示 [object Object]（0.3.5）"
   ],
   "next": [
-    "三处本地修复已完成（正则转义、宽/长格式判断、嵌套结果单元格；未改版本号、未发布）",
-    "方法顾问「只有数据」路径已在本地改完（未改版本号、未发布）",
-    "GitHub Release 与同步到 WorkBuddy / 桌面包（本地材料已预备，待发布）",
     "测量等值",
     "元分析",
     "功效分析",
@@ -136,8 +137,8 @@
     },
     {
       "id": "t_034_release",
-      "content": "发布 0.3.4 到 https://github.com/nanple/jasp-bridge/releases/tag/v0.3.4，并同步到 WorkBuddy 与桌面包（待明天进行）",
-      "status": "pending"
+      "content": "发布 0.3.4 到 https://github.com/nanple/jasp-bridge/releases/tag/v0.3.4，并同步到 WorkBuddy 与桌面包。",
+      "status": "completed"
     },
     {
       "id": "t_data_only_advise",
@@ -148,13 +149,23 @@
       "id": "t_three_local_fixes",
       "content": "本地修复：Windows TRE 正则、宽格式误判为长格式、描述统计 [object Object]（尚未作为新版本发布）。",
       "status": "completed"
+    },
+    {
+      "id": "t_035_prepare",
+      "content": "0.3.5 本地发布材料已预备（版本号、文档、便携包与校验哈希）。",
+      "status": "completed"
+    },
+    {
+      "id": "t_035_release",
+      "content": "发布 0.3.5 到 https://github.com/nanple/jasp-bridge/releases/tag/v0.3.5，并同步到 WorkBuddy 与桌面包。",
+      "status": "pending"
     }
   ],
   "commands": {
     "smoke": "npm run smoke",
     "status": "npm run status",
     "progress": "npm run progress",
-    "build": ".\\build-release.ps1 -Version 0.3.4 -IncludeNode"
+    "build": ".\\\\build-release.ps1 -Version 0.3.5 -IncludeNode"
   },
   "paths": {
     "recipes": "src/plan/recipes.js",

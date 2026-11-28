@@ -1,4 +1,4 @@
-﻿JASP-Bridge 0.3.4 安装说明（2026-11-27）
+﻿JASP-Bridge 0.3.5 安装说明（2026-11-28）
 
 这是文档和便携安装包。WorkBuddy 实际加载的是：
 %USERPROFILE%\.workbuddy\jasp-bridge
@@ -6,19 +6,21 @@
 
 当前能力：22 类分析、16 个 MCP 工具（含 EFA / CFA / SEM、Process、混合模型，以及贝叶斯 Process、
 贝叶斯线性/广义混合模型、MIMIC、潜变量增长曲线）。可以直接说“做 EFA / CFA / SEM”；
-也可以只描述实验情景（例如组内、看反应时和正确率），插件会对照表格给出可确认的方法建议，
-说明理由和备选；对不上时会提醒。量表总分只作为建议，不会自动计算。多因素组内设计目前仍不能跑。
+也可以只描述实验情景（例如组内、看反应时和正确率），或只说「帮我分析」、还不清楚实验设计，
+插件都会对照表格先给出描述统计和可确认的方法建议，说明理由和备选；对不上时会提醒。
+本版还修复了 Windows 上相关/回归的非法正则、宽表被误判为长格式，以及描述统计表出现 [object Object] 的问题。
+量表总分只作为建议，不会自动计算。多因素组内设计目前仍不能跑。
 若未指定题项或因子，插件会按列名和前缀给出建议方案，标明为建议，确认后才执行。数据可直接加载 CSV / Excel（.xlsx .xls） / SPSS（.sav）。生成的 .jasp 会还原原始变量名，并写入变量标题与值标签。描述统计默认关闭 Shapiro-Wilk 与矩阵散点图，题项多时会更快；需要时再打开。
 回归、配对 t、ANCOVA、ANOVA 仍标 beta。
 
-官方便携包 jasp-bridge-0.3.4-portable.zip 约 41 MB，含插件代码、依赖、文档、示例
+官方便携包 jasp-bridge-0.3.5-portable.zip 约 41 MB，含插件代码、依赖、文档、示例
 和 Windows node.exe，不含约 1.7 GB 的 JASP 运行时（安装时从本机 JASP 复制）。
 
 源码与发布：https://github.com/nanple/jasp-bridge
-便携包下载：https://github.com/nanple/jasp-bridge/releases/download/v0.3.4/jasp-bridge-0.3.4-portable.zip
+便携包下载：https://github.com/nanple/jasp-bridge/releases/download/v0.3.5/jasp-bridge-0.3.5-portable.zip
 
 最简版（推荐先试）：
-把 jasp-bridge-0.3.4-portable.zip 拖进 WorkBuddy 对话框，发送：
+把 jasp-bridge-0.3.5-portable.zip 拖进 WorkBuddy 对话框，发送：
 "这是我下载的 JASP-Bridge 安装包。请帮我解压、检查本机 JASP、运行 install.ps1 安装，完成后告诉我怎么验证。不要覆盖已有的 runtime 和 sessions。"
 
 如果 WorkBuddy 不能执行本地命令，再按下面手动安装。
@@ -37,7 +39,7 @@
 - 日常分析不需要访问 GitHub；运行时从本机 JASP 复制
 
 手动安装：
-1. 解压 jasp-bridge-0.3.4-portable.zip
+1. 解压 jasp-bridge-0.3.5-portable.zip
 2. 在解压后的文件夹空白处 Shift + 右键，选择"在终端中打开"
 3. 运行：
    powershell -ExecutionPolicy Bypass -File .\install.ps1

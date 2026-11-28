@@ -1,6 +1,6 @@
 # JASP-Bridge 实用指南
 
-版本：0.3.4（2026-11-27）  
+版本：0.3.5（2026-11-28）  
 适用：WorkBuddy + 本机 JASP（Windows 10/11 64 位）
 
 > 图文版：浏览器打开 `docs/visual-guide.html`，或直接看 `docs/visual-guide.pdf`。
@@ -54,7 +54,7 @@ JASP-Bridge 是一个 WorkBuddy 的 MCP 插件。它把自然语言请求整理�
 
 ### 4.1 超级简单版：把安装包直接发给 WorkBuddy
 
-如果你的 WorkBuddy 版本允许执行本地命令或文件操作，可以把 `jasp-bridge-0.3.4-portable.zip` 拖进对话框，然后发：
+如果你的 WorkBuddy 版本允许执行本地命令或文件操作，可以把 `jasp-bridge-0.3.5-portable.zip` 拖进对话框，然后发：
 
 ```text
 这是我下载的 JASP-Bridge 安装包。请帮我：
@@ -133,10 +133,10 @@ powershell -ExecutionPolicy Bypass -File .\install.ps1
 
 ### 4.6 便携包里有什么、没有什么
 
-官方 `jasp-bridge-0.3.4-portable.zip` 约 41 MB，内含插件代码、`node_modules`、文档、示例和 Windows `node.exe`。**不包含**约 1.7 GB 的 JASP 运行时（安装时由 `install.ps1` 从本机 JASP 复制）。
+官方 `jasp-bridge-0.3.5-portable.zip` 约 41 MB，内含插件代码、`node_modules`、文档、示例和 Windows `node.exe`。**不包含**约 1.7 GB 的 JASP 运行时（安装时由 `install.ps1` 从本机 JASP 复制）。
 
 - 仓库：https://github.com/nanple/jasp-bridge
-- 便携包：https://github.com/nanple/jasp-bridge/releases/download/v0.3.4/jasp-bridge-0.3.4-portable.zip
+- 便携包：https://github.com/nanple/jasp-bridge/releases/download/v0.3.5/jasp-bridge-0.3.5-portable.zip
 - 更新清单：https://github.com/nanple/jasp-bridge/releases/latest/download/latest.json
 
 ---
@@ -567,7 +567,7 @@ $HOME\.workbuddy\mcp.json
 
 ## 15. 版本与路线图
 
-- **当前（0.3.4）**：提高对实验描述和数据列的可识别度（组内/组间等设计用语、口语别名对列名、未点名方法时的可确认建议，以及理由、备选和不一致提醒）。若用户只有数据、尚未说明设计，也会先根据表格给出描述统计和候选方法，需确认后才执行。仍为 22 类分析、16 个 MCP 工具，不是新方法包。量表总分只作为建议，不会自动计算；多因素组内设计目前仍不能跑。0.3.3 已让生成的 `.jasp` 把结果表中的编码列名还原为原始变量名，并写入变量标题与值标签。0.3.2 已将描述统计的 Shapiro-Wilk 与矩阵散点图改为默认关闭。0.3.1 已支持直接读取 Excel 和 SPSS。表、图和 `.jasp` 由 JASP 引擎产生，宿主只负责展示。其中回归、配对 t、ANCOVA、ANOVA 仍标 beta。
+- **当前（0.3.5）**：只有数据、不清楚实验设计时，也会先给出描述统计和可确认的候选方法。同时修复了 Windows 上相关/回归的非法正则、把「每人一行」的宽表误判成长格式，以及描述统计表出现 `[object Object]` 的问题。仍为 22 类分析、16 个 MCP 工具，不是新方法包。0.3.4 已提高对实验描述和数据列的可识别度（组内/组间等设计用语、口语别名对列名、未点名方法时的可确认建议）。量表总分只作为建议，不会自动计算；多因素组内设计目前仍不能跑。0.3.3 已让生成的 `.jasp` 把结果表中的编码列名还原为原始变量名，并写入变量标题与值标签。0.3.2 已将描述统计的 Shapiro-Wilk 与矩阵散点图改为默认关闭。0.3.1 已支持直接读取 Excel 和 SPSS。表、图和 `.jasp` 由 JASP 引擎产生，宿主只负责展示。其中回归、配对 t、ANCOVA、ANOVA 仍标 beta。
 - **下一步（3.0 仍未做部分）**：测量等值、元分析、功效分析、更接近 APA 的表格、更稳定地打开 `.jasp`；已经画进 PNG 的图若仍显示编码名，可在 JASP 中 Refresh。以及把缺失值策略（FIML / 多重插补）扩展到更多分析。
 
 ---

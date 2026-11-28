@@ -1,8 +1,8 @@
 {
-  "version": "0.3.4",
-  "url": "https://github.com/nanple/jasp-bridge/releases/download/v0.3.4/jasp-bridge-0.3.4-portable.zip",
-  "sha256": "c0d4a54511df09aaea1e90eb0a18126078d6200904d39bbc0e82e54074c3827c",
-  "notes": "0.3.4：提高对实验描述和数据列的可识别度。可以说「组内」等设计用语，并用「反应时」等口语对上 rt 这类列名；未点名方法时会给出可确认的建议（说明理由、备选，以及和表格对不上时的提醒）。量表总分只作为建议，不会自动计算。仍为 22 类分析、16 个 MCP 工具，不是新方法包。多因素组内设计目前仍不能跑。官方便携包含 Windows node.exe，不含 JASP 运行时。",
+  "version": "0.3.5",
+  "url": "https://github.com/nanple/jasp-bridge/releases/download/v0.3.5/jasp-bridge-0.3.5-portable.zip",
+  "sha256": "04c6533d930383d926b7e5c1e38ae827a5292ec28d7baf1534c4d9b7bf3cd7d4",
+  "notes": "0.3.5：只有数据、不清楚实验设计时，也会先给出描述统计和可确认的候选方法。修复了 Windows 上相关/回归的非法正则、把「每人一行」的宽表误判成长格式，以及描述统计表出现 [object Object] 的问题。仍为 22 类分析、16 个 MCP 工具，不是新方法包。多因素组内设计目前仍不能跑。官方便携包含 Windows node.exe，不含 JASP 运行时。",
   "runtime_required": false,
   "min_plugin_version": "0.1.0"
 }
