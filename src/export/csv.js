@@ -1,11 +1,12 @@
 import fs from "node:fs";
 import path from "node:path";
 import { ensureDir } from "../config.js";
+import { formatCell } from "../format.js";
 import { tableToRows } from "../jasp/parse.js";
 
 function csvEscape(value) {
-  if (value === null || value === undefined) return "";
-  const text = String(value);
+  const text = formatCell(value);
+  if (text === "") return "";
   return /[",\r\n]/.test(text) ? `"${text.replace(/"/g, '""')}"` : text;
 }
 

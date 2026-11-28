@@ -1,6 +1,55 @@
-function cell(value) {
+const CELL_META_KEYS = new Set([
+  "type",
+  "format",
+  "superscript",
+  "superscripts",
+  "rowSpan",
+  "colSpan",
+  ".isNewGroup",
+  "isStartOfNewGroup",
+]);
+
+/**
+ * Flatten a JASP table cell into readable text.
+ * Numeric cells often arrive as { value, type, format } instead of a bare number.
+ */
+export function formatCell(value) {
   if (value === null || value === undefined) return "";
-  let s = String(value);
+  if (typeof value === "number") return Number.isFinite(value) ? String(value) : "";
+  if (typeof value === "boolean") return value ? "true" : "false";
+  if (typeof value === "string") return value;
+  if (Array.isArray(value)) return value.map(formatCell).filter((item) => item !== "").join(", ");
+  if (typeof value === "object") {
+    if (Object.prototype.hasOwnProperty.call(value, "value")) {
+      const main = formatCell(value.value);
+      const mark = value.superscript == null || value.superscript === "" ? "" : String(value.superscript);
+      return mark ? `${main}${mark}` : main;
+    }
+    const lower = value.lower ?? value.min;
+    const upper = value.upper ?? value.max;
+    if (lower != null || upper != null) {
+      const lo = formatCell(lower);
+      const hi = formatCell(upper);
+      if (lo && hi) return `${lo}–${hi}`;
+      return lo || hi;
+    }
+    const keys = Object.keys(value);
+    const dataKeys = keys.filter((key) => !CELL_META_KEYS.has(key) && !String(key).startsWith("."));
+    const useKeys = dataKeys.length > 0 ? dataKeys : keys;
+    const parts = useKeys
+      .map((key) => {
+        const formatted = formatCell(value[key]);
+        if (formatted === "") return "";
+        return useKeys.length > 1 ? `${key}: ${formatted}` : formatted;
+      })
+      .filter(Boolean);
+    return parts.join(", ");
+  }
+  return String(value);
+}
+
+function cell(value) {
+  let s = formatCell(value);
   s = s.replace(/\r?\n/g, " ").replace(/\|/g, "\\|");
   if (s.length > 160) s = `${s.slice(0, 157)}...`;
   return s;

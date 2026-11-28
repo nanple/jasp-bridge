@@ -9,8 +9,9 @@ function levelCount(session, name) {
     (item) => String(item.name).toLowerCase() === String(name).toLowerCase()
   );
   if (!variable) return 0;
-  if (Array.isArray(variable.levels)) return variable.levels.length;
+  // levels is only a preview (capped at 12); unique is the real distinct count.
   if (typeof variable.unique === "number") return variable.unique;
+  if (Array.isArray(variable.levels)) return variable.levels.length;
   return 0;
 }
 
@@ -1530,7 +1531,7 @@ export const RECIPES = {
           (item) => String(item.name).toLowerCase() === String(name).toLowerCase()
         );
         if (!variable) continue;
-        const levels = Array.isArray(variable.levels) ? variable.levels.length : variable.unique;
+        const levels = levelCount(session, name);
         if (variable.type === "nominal" && Number(levels) > 2) {
           questions.push(
             `MIMIC 的预测变量必须是连续或二分变量，「${name}」有 ${levels} 个水平，请改用连续变量或二分变量。`

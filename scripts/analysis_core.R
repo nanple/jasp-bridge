@@ -109,8 +109,17 @@ jb_collect_tables <- function(results) {
 # JASP tables use the encoded column names (jaspColumn1, ...). Decode them back
 # so result.json, Markdown, CSV and the written .jasp keep the user's names.
 # Do not treat jaspColumn2 as a prefix of jaspColumn21 (object ids).
+# Escape regex metacharacters without a character class. Windows R uses TRE
+# by default, and TRE treats ']' inside '[...{}...]' as the end of the class,
+# then errors with "Invalid contents of {}". fixed=TRUE avoids that engine.
 jb_escape_regex <- function(x) {
-  gsub("([.\\^$*+?()[\\]{}|\\\\])", "\\\\\\1", x)
+  specials <- c("\\", ".", "^", "$", "*", "+", "?", "(", ")", "[", "]", "{", "}", "|")
+  vapply(as.character(x), function(s) {
+    for (ch in specials) {
+      s <- gsub(ch, paste0("\\", ch), s, fixed = TRUE)
+    }
+    s
+  }, character(1), USE.NAMES = FALSE)
 }
 
 jb_decode_map <- function(encodingMap) {

@@ -227,3 +227,12 @@ test("导出的 .jasp 结果表使用原始变量名，并保留值标签", () =
   db.close();
   fs.rmSync(dir, { recursive: true, force: true });
 });
+
+test("jb_escape_regex 不再使用 Windows TRE 会判定非法的字符类", () => {
+  const src = fs.readFileSync(new URL("../scripts/analysis_core.R", import.meta.url), "utf8");
+  assert.match(src, /jb_escape_regex\s*<-\s*function/);
+  assert.ok(!src.includes("[\\]{}"), "不得再用会让 TRE 把 {} 当成量词的字符类");
+  const end = src.indexOf("jb_decode_map");
+  const fn = src.slice(src.indexOf("jb_escape_regex <- function"), end === -1 ? undefined : end);
+  assert.match(fn, /fixed\s*=\s*TRUE/);
+});

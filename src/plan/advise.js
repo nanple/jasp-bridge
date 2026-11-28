@@ -141,8 +141,9 @@ function columnOrder(session, names) {
 
 function levelCount(variable) {
   if (!variable) return 0;
-  if (Array.isArray(variable.levels)) return variable.levels.length;
+  // levels is only a preview (capped at 12); unique is the real distinct count.
   if (typeof variable.unique === "number") return variable.unique;
+  if (Array.isArray(variable.levels)) return variable.levels.length;
   return 0;
 }
 

@@ -5,7 +5,7 @@ import os from "node:os";
 import path from "node:path";
 
 import { ingestText } from "../src/data/ingest.js";
-import { buildAdvice, detectDesign, matchSlots, wantsDemographicComparisons } from "../src/plan/advise.js";
+import { buildAdvice, detectDesign, inspectDataShape, matchSlots, wantsDemographicComparisons } from "../src/plan/advise.js";
 import { buildPlan, buildPlanPackage, planMarkdown } from "../src/plan/planner.js";
 import { detectNamedMethod } from "../src/plan/recipes.js";
 import { isDemographicName, looksLikeDemographic } from "../src/plan/suggest.js";
@@ -354,4 +354,37 @@ test("用户已说明组内设计时，原有核实与建议路径保持不变",
   const all = [primary, ...related];
   assert.ok(all.some((plan) => plan.analysis === "descriptives"));
   assert.ok(all.filter((plan) => plan.analysis === "rm_anova").length >= 2);
+});
+
+test("宽格式且 ID 唯一时，不会因 levels 预览只有 12 项而误判为长格式", () => {
+  const n = 494;
+  const header = "ID,gender,rt_cong,rt_incong";
+  const rows = Array.from({ length: n }, (_, i) => {
+    const gender = i % 2 === 0 ? "男" : "女";
+    return `${10001 + i},${gender},${500 + (i % 30)},${600 + (i % 40)}`;
+  });
+  const { session } = sessionFromCsv([header, ...rows].join("\n"), "wide_id_preview", {
+    rt_cong: "scale",
+    rt_incong: "scale",
+  });
+  const idVar = session.data.variables.find((variable) => variable.name === "ID");
+  assert.equal(session.data.n, n);
+  assert.equal(idVar.unique, n);
+  assert.ok(Array.isArray(idVar.levels));
+  assert.equal(idVar.levels.length, 12);
+  assert.ok(idVar.levels.length < idVar.unique);
+
+  const shape = inspectDataShape(session);
+  assert.equal(shape.format, "wide");
+  assert.notEqual(shape.format, "long");
+
+  const utterance = "这是组内实验的横向研究，请分析反应时";
+  const advice = buildAdvice({ session, utterance });
+  const text = `${advice.design.summary}\n${(advice.warnings || []).join("\n")}\n${(advice.specs || [])
+    .map((spec) => spec.summary)
+    .join("\n")}`;
+  assert.doesNotMatch(text, /长格式/);
+  assert.ok(!advice.specs.some((spec) => spec.analysis === "mixed_lmm"));
+  assert.ok(advice.specs.some((spec) => spec.analysis === "rm_anova"));
+  assert.doesNotThrow(() => buildPlanPackage({ session, utterance }));
 });

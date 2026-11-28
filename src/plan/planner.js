@@ -123,6 +123,14 @@ function attachTypeOptions(options, variables, session) {
   return next;
 }
 
+function levelCount(variable) {
+  if (!variable) return 0;
+  // levels is only a preview (capped at 12); unique is the real distinct count.
+  if (typeof variable.unique === "number") return variable.unique;
+  if (Array.isArray(variable.levels)) return variable.levels.length;
+  return 0;
+}
+
 function validateVariables(session, recipe, variables, utterance = "") {
   const warnings = [];
   const questions = [];
@@ -182,7 +190,7 @@ function validateVariables(session, recipe, variables, utterance = "") {
   // 分析特定检查
   if (recipe.key === "ttest_independent" && resolved.group) {
     const group = index.get(resolved.group[0].toLowerCase());
-    const levels = group?.levels?.length || group?.unique || 0;
+    const levels = levelCount(group);
     if (levels > 2) {
       questions.push(
         `分组变量「${resolved.group[0]}」有 ${levels} 个水平，独立样本 t 检验只适用 2 组；可改用单因素 ANOVA。`
@@ -196,7 +204,7 @@ function validateVariables(session, recipe, variables, utterance = "") {
   if (recipe.key === "anova" && resolved.fixedFactors) {
     for (const factor of resolved.fixedFactors) {
       const variable = index.get(factor.toLowerCase());
-      const levels = variable?.levels?.length || variable?.unique || 0;
+      const levels = levelCount(variable);
       if (levels < 2) questions.push(`固定因子「${factor}」少于 2 个水平，无法做 ANOVA。`);
     }
 
@@ -236,7 +244,7 @@ function validateVariables(session, recipe, variables, utterance = "") {
     if (resolved.fixedFactors.length > 1) {
       const cells = resolved.fixedFactors.reduce((total, factor) => {
         const variable = index.get(factor.toLowerCase());
-        const levels = variable?.levels?.length || variable?.unique || 1;
+        const levels = levelCount(variable) || 1;
         return total * Math.max(1, levels);
       }, 1);
       const n = session?.data?.n || 0;
@@ -266,7 +274,7 @@ function validateVariables(session, recipe, variables, utterance = "") {
 
     for (const factor of between) {
       const variable = index.get(factor.toLowerCase());
-      const levels = variable?.levels?.length || variable?.unique || 0;
+      const levels = levelCount(variable);
       if (levels > 0 && levels < 2) {
         questions.push(`组间因子「${factor}」只有 1 个水平，无法做组间比较。`);
       }
