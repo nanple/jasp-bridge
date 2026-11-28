@@ -252,6 +252,19 @@ function measureFamiliesFrom(variables, session) {
   return families;
 }
 
+
+function isConditionPrefix(prefix) {
+  return /^(time|wave|session|block|cond|condition|trial|t|w|pre|post|prepost|时点|时间|条件|试次)$/i.test(
+    String(prefix || "")
+  );
+}
+
+function isRepeatedMeasureFamily(family) {
+  if (!family || !Array.isArray(family.items) || family.items.length < 2) return false;
+  if (family.kind === "prefix") return isConditionPrefix(family.key);
+  return family.kind !== "prefix";
+}
+
 function leftoverFactorTokens(name) {
   return tokenize(name).filter((token) => !MEASURE_TOKENS.has(token) && !/^\d+$/.test(token) && token !== String(name).toLowerCase());
 }
@@ -308,12 +321,7 @@ export function inspectDataShape(session) {
   } else if (families.some((family) => family.items.length >= 2)) {
     looksLike = "within";
   } else {
-    const grouping = variables.filter(
-      (variable) =>
-        variable.type === "nominal" &&
-        !looksLikeId(variable.name) &&
-        levelCount(variable) >= 2
-    );
+    const grouping = variables.filter((variable) => isUsefulGrouping(variable, n));
     if (measureVars.length >= 1 && grouping.length >= 1) looksLike = "between";
   }
 
@@ -452,41 +460,62 @@ function familyForColumns(columns, session) {
   return { key: columns[0], items: columnOrder(session, columns), kind: "group" };
 }
 
+function observedShapeText(observed, format) {
+  if (observed === "within" && format === "long") return "长格式的组内数据（同一被试多行）";
+  if (observed === "within") return "宽格式的组内数据（同一被试一行，条件分列）";
+  if (observed === "between") return "组间数据（每个条件或分组各是不同的人）";
+  return "还不能从表格明确判断是组内还是组间";
+}
+
 function describeDesign(claimed, observed, format) {
   const labels = { within: "组内", between: "组间", mixed: "混合", unclear: "尚不明确" };
-  const claimedText = claimed ? labels[claimed] || claimed : "未说明";
-  const observedText =
-    observed === "within" && format === "long"
-      ? "长格式的组内数据（同一被试多行）"
-      : observed === "within"
-        ? "宽格式的组内数据（同一被试一行，条件分列）"
-        : observed === "between"
-          ? "组间数据（每个条件或分组各是不同的人）"
-          : "还不能从表格明确判断";
+  const observedText = observedShapeText(observed, format);
+  if (!claimed) {
+    if (observed === "unclear") {
+      return "你还没有说明实验设计，表格也还不能明确判断是组内还是组间。下面先给出描述统计；请再确认设计（组内或组间）以及因变量是哪些。";
+    }
+    return `你还没有说明实验设计。表格看起来像${observedText}。这只是根据列结构的判断，请确认后再选方法。`;
+  }
+  const claimedText = labels[claimed] || claimed;
   return `你提到的设计是${claimedText}；对照表格，看起来更像${observedText}。`;
 }
 
-function whyFor(spec) {
+function whyFor(spec, { tentative = false } = {}) {
   if (spec.analysis === "descriptives") {
-    return "先看因变量（以及已识别的人口学变量）的分布和样本量，再做推断统计。";
+    return tentative
+      ? "你还没有指定方法。先根据表格里的测量列做描述统计，了解分布和样本量，再确认后面的分析方法。"
+      : "先看因变量（以及已识别的人口学变量）的分布和样本量，再做推断统计。";
   }
   if (spec.analysis === "rm_anova") {
     const n = (spec.variables.repeatedMeasuresCells || []).length;
+    if (tentative) {
+      return n === 2
+        ? "表格看起来像同一被试在两个条件下的测量，可以考虑用重复测量方差分析比较这些列；两个水平时也可以用配对 t 检验。请先确认这确实是组内设计。"
+        : "表格看起来像同一被试在多个条件下的测量，可以考虑用重复测量方差分析比较这些列。请先确认这确实是组内设计。";
+    }
     return n === 2
       ? "这是组内设计，同一被试在不同条件下重复测量；两个水平时可用重复测量方差分析比较条件差异。"
       : "这是组内设计，同一被试在多个条件下重复测量，适合用重复测量方差分析比较条件差异。";
   }
   if (spec.analysis === "paired_ttest") {
-    return "组内设计且只有两个水平时，配对 t 检验可以直接比较这两列。";
+    return tentative
+      ? "表格看起来只有两个条件列，如果确认是组内设计，也可以用配对 t 检验直接比较这两列。"
+      : "组内设计且只有两个水平时，配对 t 检验可以直接比较这两列。";
   }
   if (spec.analysis === "ttest_independent") {
-    return "这是组间、两水平的比较，独立样本 t 检验适用于不同的人分在两个组。";
+    return tentative
+      ? "表格看起来像不同的人分在两个组，可以考虑用独立样本 t 检验做组间比较。请先确认这是组间设计，以及要用哪一列做因变量、哪一列分组。"
+      : "这是组间、两水平的比较，独立样本 t 检验适用于不同的人分在两个组。";
   }
   if (spec.analysis === "anova") {
-    return "组间因子有两个以上水平时，用方差分析比较各组均值。";
+    return tentative
+      ? "表格看起来像不同的人分在两个以上的组，可以考虑用方差分析做组间比较。请先确认这是组间设计，以及要用哪一列做因变量、哪一列分组。"
+      : "组间因子有两个以上水平时，用方差分析比较各组均值。";
   }
   if (spec.analysis === "mixed_lmm") {
-    return "数据是长格式的组内测量（同一被试多行）。当前重复测量方差分析需要宽格式，线性混合模型可以直接在长格式上估计条件差异。";
+    return tentative
+      ? "表格看起来是长格式（同一被试多行）。当前重复测量方差分析需要宽格式，不能直接按长格式去跑；如果确认是组内设计，可以考虑用线性混合模型，或先把数据整理成每个条件一列（插件不会自动改数据）。"
+      : "数据是长格式的组内测量（同一被试多行）。当前重复测量方差分析需要宽格式，线性混合模型可以直接在长格式上估计条件差异。";
   }
   return "";
 }
@@ -527,7 +556,65 @@ function summarizeSlots(slots) {
   return parts.join("。");
 }
 
+function tableMeasureColumns(session) {
+  return (session?.data?.variables || [])
+    .filter(
+      (variable) =>
+        ["scale", "ordinal"].includes(variable.type) && !looksLikeId(variable.name)
+    )
+    .map((variable) => variable.name);
+}
+
+function tableDemographicColumns(session) {
+  return (session?.data?.variables || [])
+    .filter((variable) => looksLikeDemographic(variable) && !looksLikeId(variable.name))
+    .map((variable) => variable.name);
+}
+
+function scaleItemNames(session) {
+  return new Set(
+    suggestScaleMembership(session)
+      .filter((item) => Array.isArray(item.items) && item.items.length >= 2 && !item.tentativeReverse)
+      .flatMap((item) => item.items)
+  );
+}
+
+function standaloneMeasureColumns(session) {
+  const items = scaleItemNames(session);
+  return tableMeasureColumns(session).filter((name) => {
+    if (items.has(name)) return false;
+    return true;
+  });
+}
+
+function isUsefulGrouping(variable, n) {
+  if (!variable || variable.type !== "nominal") return false;
+  if (looksLikeId(variable.name)) return false;
+  const levels = levelCount(variable);
+  if (levels < 2) return false;
+  const size = Number(n) || 0;
+  if (size > 0 && (levels >= size || size / levels < 1.5)) return false;
+  return true;
+}
+
+function tableGroupingColumns(session) {
+  const n = session?.data?.n || 0;
+  return (session?.data?.variables || [])
+    .filter((variable) => isUsefulGrouping(variable, n))
+    .map((variable) => variable.name);
+}
+
+function betweenDependentColumns(session) {
+  const preferred = standaloneMeasureColumns(session).filter((name) => {
+    const variable = variableByName(session, name);
+    return variable && !looksLikeDemographic(variable);
+  });
+  if (preferred.length > 0) return preferred;
+  return standaloneMeasureColumns(session);
+}
+
 export function buildAdvice({ session, utterance = "", analysis, variables } = {}) {
+
   const claimed = detectDesign(utterance);
   const shape = inspectDataShape(session);
   const slots = matchSlots({ utterance, session });
@@ -571,7 +658,18 @@ export function buildAdvice({ session, utterance = "", analysis, variables } = {
   const demoNames = uniqueNames(safeDemos.flatMap((entry) => entry.columns));
   const nominalDemos = nominalDemographics(session, demoNames);
   const specs = [];
-  const designForMethod = claimed || (shape.looksLike === "within" || shape.looksLike === "between" ? shape.looksLike : null);
+  const hasTable = (session?.data?.variables || []).length > 0;
+  const tentative = !claimed && !analysis;
+  const rmFamilies = (shape.families || []).filter((family) => isRepeatedMeasureFamily(family));
+  let observedForAdvice = shape.looksLike;
+  if (tentative && shape.looksLike === "within" && shape.format !== "long" && rmFamilies.length === 0) {
+    const grouping = tableGroupingColumns(session);
+    const standalone = betweenDependentColumns(session);
+    observedForAdvice = grouping.length > 0 && standalone.length > 0 ? "between" : "unclear";
+  }
+  const designForMethod =
+    claimed ||
+    (observedForAdvice === "within" || observedForAdvice === "between" ? observedForAdvice : null);
   const canGround = safeDependents.length > 0 || slots.exact.length > 0 || slots.ranged.length > 0 || Boolean(claimed);
 
   const descVars = uniqueNames([
@@ -579,6 +677,9 @@ export function buildAdvice({ session, utterance = "", analysis, variables } = {
     ...scaleLike(session, demoNames),
     ...scaleLike(session, [...slots.exact, ...slots.ranged]).filter((name) => !looksLikeDemographic(variableByName(session, name) || { name })),
   ]);
+  if (descVars.length === 0 && !analysis) {
+    descVars.push(...tableMeasureColumns(session));
+  }
 
   if (descVars.length > 0 && !analysis) {
     specs.push({
@@ -587,6 +688,18 @@ export function buildAdvice({ session, utterance = "", analysis, variables } = {
       variables: { variables: descVars },
       summary: `描述统计：${descVars.join("、")}`,
     });
+  }
+
+  if (tentative && hasTable) {
+    warnings.push(
+      "你还没有说明实验设计或要分析的变量。下面先根据表格给出描述统计，并列出几种说得通的候选方法，都需要你确认后才执行。表格形态只是看起来像某种设计，不能当成已经确定的实验设计。"
+    );
+    const foundDemos = tableDemographicColumns(session);
+    if (foundDemos.length > 0) {
+      warnings.push(
+        `从表头识别到可能的人口学变量：${foundDemos.join("、")}。如需做组间比较，请确认用哪一列分组；连续变量不宜直接当作分组，分类变量应保持原来的测量类型。`
+      );
+    }
   }
 
   const considerWithin =
@@ -608,6 +721,7 @@ export function buildAdvice({ session, utterance = "", analysis, variables } = {
         }))
       : shape.families
           .filter((family) => family.items.length >= 2)
+          .filter((family) => !tentative || isRepeatedMeasureFamily(family))
           .map((family) => ({
             key: family.key,
             items: family.items,
@@ -634,7 +748,14 @@ export function buildAdvice({ session, utterance = "", analysis, variables } = {
       });
     }
   } else if (considerWithin && shape.format === "long") {
-    const dvCols = uniqueNames(safeDependents.filter((entry) => entry.columns.length === 1).flatMap((entry) => entry.columns));
+    let dvCols = uniqueNames(safeDependents.filter((entry) => entry.columns.length === 1).flatMap((entry) => entry.columns));
+    if (dvCols.length === 0) {
+      dvCols = uniqueNames(
+        (shape.families || [])
+          .filter((family) => family.items.length === 1)
+          .flatMap((family) => family.items)
+      );
+    }
     const condition = shape.conditionCols[0];
     if (dvCols.length > 0 && condition && shape.subject) {
       for (const dv of dvCols) {
@@ -646,9 +767,15 @@ export function buildAdvice({ session, utterance = "", analysis, variables } = {
             fixedEffects: [condition],
             randomFactors: [shape.subject],
           },
-          summary: `线性混合模型（长格式）：${dv} ~ ${condition}，随机效应为 ${shape.subject}`,
+          summary: tentative
+            ? `候选：线性混合模型（长格式，待确认）：${dv} ~ ${condition}，随机效应为 ${shape.subject}`
+            : `线性混合模型（长格式）：${dv} ~ ${condition}，随机效应为 ${shape.subject}`,
         });
       }
+    } else if (tentative) {
+      questions.push(
+        "表格看起来是长格式（同一被试多行）。当前重复测量方差分析需要宽格式，不能直接按长格式去跑。请确认被试编号、条件列和因变量；如需改用重复测量方差分析，请先把数据整理成每个条件一列（插件不会自动改数据）。"
+      );
     }
   }
 
@@ -693,14 +820,94 @@ export function buildAdvice({ session, utterance = "", analysis, variables } = {
     }
   }
 
+  const hasBetweenSpecs = specs.some(
+    (spec) => spec.analysis === "ttest_independent" || spec.analysis === "anova"
+  );
+  if ((tentative ? observedForAdvice : shape.looksLike) === "between" && claimed !== "within" && !hasBetweenSpecs && !analysis) {
+    const dvs = betweenDependentColumns(session);
+    const groups = tableGroupingColumns(session);
+    if (dvs.length === 0 && scaleItemNames(session).size >= 2) {
+      questions.push(
+        "题项看起来可能属于同一个量表。是否先做信度，或确认后再合成均分，再比较组别？插件不会自动计分，也不会自行反向计分。"
+      );
+    }
+    for (const dv of dvs) {
+      for (const group of groups) {
+        const levels = levelCount(variableByName(session, group));
+        if (levels === 2) {
+          specs.push({
+            analysis: "ttest_independent",
+            role: "inferential",
+            variables: { dependent: [dv], group: [group] },
+            summary: tentative
+              ? `候选：独立样本 t 检验（待确认）：按 ${group} 比较 ${dv}`
+              : `独立样本 t 检验：按 ${group} 比较 ${dv}`,
+          });
+        } else if (levels > 2) {
+          specs.push({
+            analysis: "anova",
+            role: "inferential",
+            variables: { dependent: [dv], fixedFactors: [group] },
+            summary: tentative
+              ? `候选：方差分析（待确认）：按 ${group} 比较 ${dv}`
+              : `方差分析：按 ${group} 比较 ${dv}`,
+          });
+        }
+      }
+    }
+  }
+
+  if (tentative && observedForAdvice === "unclear") {
+    questions.push(
+      "从表里还不能确定这是组内还是组间设计。请确认实验设计，以及因变量是哪些列。"
+    );
+  }
+
+  if (tentative && scales.some((item) => Array.isArray(item.items) && item.items.length >= 2 && !item.tentativeReverse)) {
+    if (!questions.some((question) => question.includes("同一个量表"))) {
+      questions.push(
+        "有些列名前缀相同，看起来可能属于同一个量表。是否先做信度，或确认后再合成均分？插件不会自动计分，也不会自行反向计分。"
+      );
+    }
+  }
+
+  if (tentative) {
+    for (const spec of specs.filter((item) => item.analysis === "rm_anova")) {
+      const n = (spec.variables.repeatedMeasuresCells || []).length;
+      if (n === 2) {
+        spec.summary = `候选：重复测量方差分析（待确认，也可改用配对 t 检验）：${spec.variables.repeatedMeasuresCells.join("、")}`;
+      } else {
+        spec.summary = `候选：重复测量方差分析（待确认）：${spec.variables.repeatedMeasuresCells.join("、")}`;
+      }
+    }
+  }
+
+  const inferentialLimit = 6;
+  const inferentialNow = specs.filter((spec) => spec.role !== "descriptives");
+  if (inferentialNow.length > inferentialLimit) {
+    const kept = new Set(inferentialNow.slice(0, inferentialLimit));
+    const removed = inferentialNow.slice(inferentialLimit);
+    for (const spec of specs.slice()) {
+      if (spec.role !== "descriptives" && !kept.has(spec)) {
+        const index = specs.indexOf(spec);
+        if (index >= 0) specs.splice(index, 1);
+      }
+    }
+    questions.push(
+      `根据表格可以列出多种候选方法，这里先给出 ${inferentialLimit} 种。其余未展开：${removed
+        .map((spec) => spec.summary)
+        .join("；")}。请确认要用哪一种，或用 jasp_update_plan 补充。`
+    );
+  }
+
   for (const spec of specs) {
-    spec.why = whyFor(spec);
+    spec.why = whyFor(spec, { tentative });
     spec.alternatives = alternativesFor(spec);
   }
 
   if (
     specs.length === 0 &&
-    (questions.length > 0 || slots.unmatched.length > 0 || slots.dependents.length > 0)
+    (questions.length > 0 || slots.unmatched.length > 0 || slots.dependents.length > 0 || (tentative && hasTable))
   ) {
     specs.push({
       analysis: "descriptives",
@@ -710,21 +917,36 @@ export function buildAdvice({ session, utterance = "", analysis, variables } = {
     });
   }
 
+  if (tentative && hasTable && specs.length === 0) {
+    questions.push("从表里还不能确定因变量。请说明要分析哪些列，以及这是组内还是组间设计。");
+    specs.push({
+      analysis: "descriptives",
+      role: "descriptives",
+      variables: {},
+      summary: "描述统计（请先确认要分析的变量）",
+    });
+  }
+
   const inferential = specs.find((spec) => spec.role === "inferential") || specs.find((spec) => spec.role !== "descriptives");
   const primarySpec = inferential || specs[0] || null;
-  const canAdvise = Boolean(primarySpec) && (canGround || questions.length > 0 || slots.unmatched.length > 0);
+  const canAdvise =
+    Boolean(primarySpec) &&
+    (canGround || questions.length > 0 || slots.unmatched.length > 0 || (tentative && hasTable && specs.length > 0));
 
   const why = primarySpec?.why || "";
   const alternatives = uniqueNames(specs.flatMap((spec) => spec.alternatives || []));
 
-  const slotSummary = summarizeSlots(slots);
+  let slotSummary = summarizeSlots(slots);
+  if (!slotSummary && descVars.length) {
+    slotSummary = `未在话里指定变量；已根据表格选出测量列（已排除编号列）：${descVars.join("、")}`;
+  }
   return {
     design: {
       claimed,
-      observed: shape.looksLike,
+      observed: tentative ? observedForAdvice : shape.looksLike,
       format: shape.format,
       mismatch,
-      summary: describeDesign(claimed, shape.looksLike, shape.format),
+      summary: describeDesign(claimed, tentative ? observedForAdvice : shape.looksLike, shape.format),
     },
     slotSummary,
     slots,
@@ -735,6 +957,7 @@ export function buildAdvice({ session, utterance = "", analysis, variables } = {
     alternatives,
     scales: scaleNotes,
     examineDemographics,
+    tentative,
     specs,
     primarySpec,
     canAdvise,

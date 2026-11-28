@@ -5,7 +5,7 @@ import os from "node:os";
 import path from "node:path";
 
 import { ingestText } from "../src/data/ingest.js";
-import { detectDesign, matchSlots, wantsDemographicComparisons } from "../src/plan/advise.js";
+import { buildAdvice, detectDesign, matchSlots, wantsDemographicComparisons } from "../src/plan/advise.js";
 import { buildPlan, buildPlanPackage, planMarkdown } from "../src/plan/planner.js";
 import { detectNamedMethod } from "../src/plan/recipes.js";
 import { isDemographicName, looksLikeDemographic } from "../src/plan/suggest.js";
@@ -186,4 +186,172 @@ test("标签为反应时时，即使列名不是 rt 也能唯一匹配", () => {
   const rt = slots.dependents.find((entry) => entry.key === "rt");
   assert.deepEqual(rt.columns, ["x1"]);
   assert.equal(rt.status, "unique");
+});
+
+function betweenSession() {
+  const csv = `id,gender,age,education,rt,acc
+1,男,21,本科,520,0.95
+2,女,22,硕士,540,0.90
+3,男,20,本科,500,0.97
+4,女,23,本科,530,0.88
+5,男,25,硕士,510,0.86
+6,女,24,博士,550,0.82
+`;
+  return sessionFromCsv(csv, "between", { rt: "scale", acc: "scale", age: "scale" });
+}
+
+function unclearSession() {
+  const csv = `id,note,score,other
+1,a,12,3.1
+2,b,15,2.8
+3,c,11,3.4
+4,d,14,2.9
+`;
+  return sessionFromCsv(csv, "unclear", { score: "scale", other: "scale" });
+}
+
+function scaleBetweenSession() {
+  const csv = `id,gender,sat1,sat2,sat3,sat4
+1,男,4,5,3,4
+2,女,3,4,2,3
+3,男,5,5,4,5
+4,女,2,3,2,3
+5,男,4,4,3,4
+6,女,3,2,3,2
+`;
+  return sessionFromCsv(csv, "scale_between", {
+    sat1: "ordinal",
+    sat2: "ordinal",
+    sat3: "ordinal",
+    sat4: "ordinal",
+  });
+}
+
+function longSession() {
+  const csv = `id,condition,rt
+1,cong,520
+1,incong,610
+2,cong,540
+2,incong,640
+3,cong,500
+3,incong,590
+4,cong,530
+4,incong,660
+`;
+  return sessionFromCsv(csv, "long", { rt: "scale" });
+}
+
+test("只有数据、原话是帮我分析时，根据宽格式组内表格给出描述统计和候选方法", () => {
+  const { session } = stroopWideSession();
+  const advice = buildAdvice({ session, utterance: "帮我分析" });
+  assert.equal(advice.canAdvise, true);
+  assert.equal(advice.tentative, true);
+  assert.ok(advice.specs.some((spec) => spec.analysis === "descriptives"));
+  const desc = advice.specs.find((spec) => spec.analysis === "descriptives");
+  assert.ok(desc.variables.variables.includes("rt_cong"));
+  assert.ok(desc.variables.variables.includes("acc_incong"));
+  assert.ok(desc.variables.variables.includes("age"));
+  assert.ok(!desc.variables.variables.includes("id"));
+  const rm = advice.specs.filter((spec) => spec.analysis === "rm_anova");
+  assert.ok(rm.some((spec) => spec.variables.repeatedMeasuresCells?.join() === "rt_cong,rt_incong"));
+  assert.ok(rm.some((spec) => spec.variables.repeatedMeasuresCells?.join() === "acc_cong,acc_incong"));
+  assert.match(advice.design.summary, /你还没有说明实验设计/);
+  assert.match(advice.design.summary, /看起来像/);
+  assert.ok(!String(advice.why).includes("这是组内设计"));
+  assert.ok(advice.alternatives.some((item) => item.includes("配对")));
+
+  assert.doesNotThrow(() => buildPlan({ session, utterance: "帮我分析" }));
+  const { primary, related } = buildPlanPackage({ session, utterance: "帮我分析" });
+  const all = [primary, ...related];
+  assert.ok(all.some((plan) => plan.analysis === "descriptives"));
+  assert.ok(all.some((plan) => plan.analysis === "rm_anova"));
+  assert.ok(related.every((plan) => plan.id && plan.id !== primary.id));
+  const markdown = planMarkdown(primary);
+  assert.match(markdown, /看起来像/);
+  assert.doesNotMatch(markdown, /这是组内设计/);
+  assert.match(markdown, /不会自动执行|确认/);
+});
+
+test("只有数据、不清楚实验设计时，组间表格给出描述统计以及 t 检验或方差分析候选", () => {
+  const { session } = betweenSession();
+  const advice = buildAdvice({ session, utterance: "我只有数据，不清楚实验设计" });
+  assert.equal(advice.canAdvise, true);
+  assert.ok(advice.specs.some((spec) => spec.analysis === "descriptives"));
+  const desc = advice.specs.find((spec) => spec.analysis === "descriptives");
+  assert.ok(desc.variables.variables.includes("rt") && desc.variables.variables.includes("acc"));
+  assert.ok(advice.specs.some((spec) => spec.analysis === "ttest_independent" && spec.variables.group?.includes("gender")));
+  assert.ok(advice.specs.some((spec) => spec.analysis === "anova" && spec.variables.fixedFactors?.includes("education")));
+  assert.ok(!advice.specs.some((spec) => (spec.variables.group || spec.variables.fixedFactors || []).includes("age")));
+  const text = `${advice.why}\n${advice.warnings.join("\n")}\n${advice.design.summary}`;
+  assert.match(text, /看起来像/);
+  assert.ok(!text.includes("这是组间、两水平的比较"));
+  assert.ok(!/请把.+改成连续|建议把.+改成连续/.test(text));
+
+  assert.doesNotThrow(() => buildPlanPackage({ session, utterance: "我只有数据，不清楚实验设计" }));
+  const { primary, related } = buildPlanPackage({ session, utterance: "我只有数据，不清楚实验设计" });
+  const all = [primary, ...related];
+  assert.ok(all.some((plan) => plan.analysis === "descriptives"));
+  assert.ok(all.some((plan) => plan.analysis === "ttest_independent"));
+  assert.ok(all.some((plan) => plan.analysis === "anova"));
+});
+
+test("只有数据且表格形态不清时，仍给出描述统计并请用户确认设计", () => {
+  const { session } = unclearSession();
+  const advice = buildAdvice({ session, utterance: "帮我分析" });
+  assert.equal(advice.canAdvise, true);
+  const desc = advice.specs.find((spec) => spec.analysis === "descriptives");
+  assert.ok(desc);
+  assert.ok(desc.variables.variables.includes("score"));
+  assert.ok(desc.variables.variables.includes("other"));
+  assert.ok(!desc.variables.variables.includes("id"));
+  assert.ok(!advice.specs.some((spec) => spec.role === "inferential"));
+  assert.ok(advice.questions.some((question) => question.includes("组内") && question.includes("组间")));
+  assert.match(advice.design.summary, /还不能明确判断/);
+  const { primary } = buildPlanPackage({ session, utterance: "帮我分析" });
+  assert.equal(primary.analysis, "descriptives");
+  assert.doesNotMatch(planMarkdown(primary), /无法识别分析类型/);
+});
+
+test("量表题项加分组时，不把题项当成组内条件，也不建议把性别改成连续变量", () => {
+  const { session } = scaleBetweenSession();
+  const advice = buildAdvice({ session, utterance: "帮我分析" });
+  assert.equal(advice.canAdvise, true);
+  assert.ok(advice.specs.some((spec) => spec.analysis === "descriptives"));
+  assert.ok(!advice.specs.some((spec) => spec.analysis === "rm_anova"));
+  assert.ok(!advice.specs.some((spec) => spec.analysis === "ttest_independent" || spec.analysis === "anova"));
+  const text = `${advice.questions.join("\n")}\n${(advice.scales || []).join("\n")}\n${advice.warnings.join("\n")}`;
+  assert.match(text, /量表/);
+  assert.ok(!/请把.+改成连续|建议把.+改成连续/.test(text));
+  assert.equal(advice.design.observed, "unclear");
+});
+
+test("长格式表格在未说明设计时建议混合模型，并说明不要自动改数据", () => {
+  const { session } = longSession();
+  const advice = buildAdvice({ session, utterance: "帮我分析" });
+  assert.equal(advice.canAdvise, true);
+  assert.ok(advice.specs.some((spec) => spec.analysis === "descriptives"));
+  const mixed = advice.specs.find((spec) => spec.analysis === "mixed_lmm");
+  assert.ok(mixed);
+  assert.deepEqual(mixed.variables.dependent, ["rt"]);
+  assert.deepEqual(mixed.variables.fixedEffects, ["condition"]);
+  assert.deepEqual(mixed.variables.randomFactors, ["id"]);
+  const text = `${advice.why}\n${advice.warnings.join("\n")}\n${advice.alternatives.join("\n")}`;
+  assert.match(text, /长格式/);
+  assert.match(text, /宽格式/);
+  assert.match(text, /不会自动/);
+  const { primary, related } = buildPlanPackage({ session, utterance: "帮我分析" });
+  assert.ok([primary, ...related].some((plan) => plan.analysis === "mixed_lmm"));
+});
+
+test("用户已说明组内设计时，原有核实与建议路径保持不变", () => {
+  const { session } = stroopWideSession();
+  const advice = buildAdvice({ session, utterance: STROOP_UTTERANCE });
+  assert.equal(advice.tentative, false);
+  assert.equal(advice.design.claimed, "within");
+  assert.match(advice.design.summary, /你提到的设计是组内/);
+  assert.ok(advice.why.includes("这是组内设计") || advice.specs.some((spec) => String(spec.why || "").includes("这是组内设计")));
+  const { primary, related } = buildPlanPackage({ session, utterance: STROOP_UTTERANCE });
+  const all = [primary, ...related];
+  assert.ok(all.some((plan) => plan.analysis === "descriptives"));
+  assert.ok(all.filter((plan) => plan.analysis === "rm_anova").length >= 2);
 });
